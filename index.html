@@ -742,19 +742,19 @@
                         r.similarity = +((r.similarity - 80) * 5).toFixed(2));
 
                 /* ========== 新增低分区间规则 ========== */
-                } else if (allBelow(20) && allAbove(12.5)) {        // ⑤ 全 <20 且 >12.5
+                } else if (allBelow(20)  && notAllBelow(12.5)) {      // ⑤ 全 <20 但并非全 <12.5
                     top5Results.forEach(r =>
                         r.similarity = +(r.similarity * 5).toFixed(2));
-
-                } else if (allBelow(12.5) && allAbove(7.5)) {       // ⑥ 全 <12.5 且 >7.5
+                
+                } else if (allBelow(12.5) && notAllBelow(7.5)) {      // ⑥ 全 <12.5 但并非全 <7.5
                     top5Results.forEach(r =>
                         r.similarity = +(r.similarity * 7.5).toFixed(2));
-
-                } else if (allBelow(7.5) && allAbove(5)) {          // ⑦ 全 <7.5 且 >5
+                
+                } else if (allBelow(7.5) && notAllBelow(5)) {         // ⑦ 全 <7.5 但并非全 <5
                     top5Results.forEach(r =>
                         r.similarity = +(r.similarity * 12.5).toFixed(2));
-
-                } else if (allBelow(5)) {                           // ⑧ 全 <5
+                
+                } else if (allBelow(5)) {                             // ⑧ 全 <5
                     top5Results.forEach(r =>
                         r.similarity = +(r.similarity * 17.5).toFixed(2));
 
