@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随星录：元素使灵魂特质测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background-color: #000;
+            color: #e5e7eb;
+            overflow: auto;
+        }
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        .quiz-container {
+            background-color: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(75, 85, 99, 0.4);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+        }
+        .btn {
+            transition: all 0.2s ease-in-out;
+            border: 1px solid #4b5563;
+            background-color: rgba(55, 65, 81, 0.7);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+            border-color: #6366f1;
+        }
+        .option-label {
+            background-color: rgba(55, 65, 81, 0.7);
+            border: 1px solid #4b5563;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 64px;
+        }
+        input[type="radio"]:checked + .option-label {
+            background-color: #4f46e5;
+            border-color: #818cf8;
+            color: white;
+            transform: scale(1.02);
+            box-shadow: 0 0 15px #6366f1;
+        }
+        .scale-container-wrapper { padding: 10px 0; }
+        .scale-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+        }
+        .scale-option { position: relative; }
+        .scale-option input[type="radio"] {
+            opacity: 0;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .scale-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        /* --- REQUIREMENT 1: Persistent Scale Selector Glow --- */
+        input[type="radio"]:checked + label .scale-circle {
+            transform: scale(1.25);
+            box-shadow: 0 0 12px 4px #facc15, inset 0 0 8px 2px currentColor;
+        }
+        .scale-option:hover .scale-circle {
+            transform: scale(1.15);
+            box-shadow: 0 0 10px 1px currentColor;
+        }
+        .progress-bar-bg { background-color: #374151; }
+        .progress-bar-fill { background-color: #6366f1; transition: width 0.5s ease-in-out; }
+                /* ===== 更真实的金属光泽 ===== */
+        
+        .result-card-container.is-metal .element-cell{
+            /* 0️⃣ 暗灰基底 —— 避免最深处太黑 */
+            background-color:#3a4255;
+
+            /* 1️⃣ 主渐变（已整体调暗 20~25%）—————— */
+            /*   原  #6b7c9a → #556074
+            *   原  #a4b3ca → #858fa5
+            *   原  #dae4f0 → #b1b9c8
+            *   原  #a4b3ca → #858fa5
+            *   原  #879ab5 → #6d7b93  */
+            background-image:
+                linear-gradient(120deg,
+                    #556074 0%,
+                    #858fa5 30%,
+                    #b1b9c8 50%,
+                    #858fa5 70%,
+                    #6d7b93 100%),
+
+                /* 2️⃣ 细窄高光条（锐） */
+                linear-gradient(120deg,
+                    rgba(255,255,255,0.46) 0%,
+                    rgba(255,255,255,0.18) 8%,
+                    rgba(255,255,255,0.00) 22%),
+
+                /* 3️⃣ 宽柔高光条 */
+                linear-gradient(60deg,
+                    rgba(255,255,255,0.32) 8%,
+                    rgba(255,255,255,0.05) 38%,
+                    rgba(0,0,0,0.00)       62%),
+
+                /* 4️⃣ 暗角 */
+                radial-gradient(circle at 50% 50%,
+                    rgba(0,0,0,0.00) 34%,
+                    rgba(0,0,0,0.22) 100%),
+
+                /* 5️⃣ 拉丝纹理 */
+                repeating-linear-gradient(90deg,
+                    rgba(255,255,255,0.06) 0px,
+                    rgba(255,255,255,0.06) 1px,
+                    rgba(0,0,0,0.03)       2px,
+                    rgba(0,0,0,0.03)       3px);
+
+            /* 让多层渐变正确叠加 */
+            background-blend-mode: overlay, overlay, overlay, multiply, normal;
+
+            /* 轻微浮雕边缘 */
+            box-shadow:
+                inset 0 0 3px rgba(255,255,255,0.35),
+                inset 0 0 6px 2px rgba(0,0,0,0.40);
+        }
+
+        /* Metallic sheen effect */
+        .result-card-container.is-metal::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.0) 30%);
+            transform: rotate(30deg);
+            z-index: 0;
+            pointer-events: none;
+        }
+        /* Extra sheen on the periodic-table cell itself */
+        .result-card-container.is-metal .element-cell{
+            background-image: linear-gradient(
+                135deg,
+                rgba(255,255,255,0.20) 0%,
+                rgba(255,255,255,0.05) 40%,
+                rgba(31,41,55,0.30) 100%);
+        }
+        .result-card-content {
+            position: relative;
+            z-index: 1;
+        }
+        .element-cell {
+            border-color: var(--glow-color);
+            box-shadow: 0 0 15px -2px var(--glow-color);
+        }
+        /* Reduced blur radius for a sharper glow */
+        .element-symbol {
+            font-family: 'Inter', sans-serif;
+            font-weight: 800;
+            color: var(--glow-color);
+            text-shadow: 0 0 6px var(--glow-color), 0 0 12px var(--glow-color);
+        }
+        /* Category Colors */
+        .element-style-alkali { --glow-color: #f87171; } /* Red */
+        .element-style-alkaline-earth { --glow-color: #fb923c; } /* Orange */
+        .element-style-transition-metal { --glow-color: #38bdf8; } /* Sky Blue */
+        .element-style-lanthanide { --glow-color: #f472b6; } /* Pink */
+        .element-style-actinide { --glow-color: #e879f9; } /* Fuchsia */
+        .element-style-post-transition { --glow-color: #4ade80; } /* Green */
+        .element-style-metalloid { --glow-color: #2dd4bf; } /* Teal */
+        .element-style-nonmetal { --glow-color: #60a5fa; } /* Blue */
+        .element-style-halogen { --glow-color: #c084fc; } /* Purple */
+        .element-style-noble-gas { --glow-color: #e5e7eb; } /* White */
+        .element-style-unknown { --glow-color: #9ca3af; } /* Gray */
+
+        /* Carousel Styles */
+        #results-carousel { position: relative; width: 100%; overflow: hidden; }
+        #results-track { display: flex; transition: transform 0.5s ease-in-out; }
+        .result-card-wrapper { min-width: 100%; padding: 0 8px; box-sizing: border-box; }
+        .carousel-btn {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            background-color: rgba(55, 65, 81, 0.8); color: white;
+            border: 1px solid #4b5563; border-radius: 50%;
+            width: 40px; height: 40px; z-index: 10; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .carousel-btn:hover { background-color: #4f46e5; }
+        #carousel-prev { left: 0px; }
+        #carousel-next { right: 0px; }
+        #carousel-dots { text-align: center; padding: 1rem 0; }
+        .dot {
+            cursor: pointer; height: 12px; width: 12px; margin: 0 4px;
+            background-color: #4b5563; border-radius: 50%;
+            display: inline-block; transition: background-color 0.6s ease;
+        }
+        .dot.active, .dot:hover { background-color: #818cf8; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <canvas id="matrix-canvas"></canvas>
+
+    <div id="quiz-app" class="quiz-container w-full max-w-3xl mx-auto p-6 md:p-8">
+
+        <div id="start-screen" class="text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-white mb-3">元素使灵魂特质测试</h1>
+            <p class="text-gray-400 mb-8">探索你内心深处潜藏的元素力量，将为您呈现最接近的五位元素使。</p>
+            <button id="start-btn" class="btn bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500">
+                开始测试
+            </button>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm font-medium text-gray-400">测试进度</span>
+                    <span id="progress-text" class="text-sm font-medium text-indigo-400">1 / 30</span>
+                </div>
+                <div class="w-full progress-bar-bg rounded-full h-2.5">
+                    <div id="progress-bar" class="progress-bar-fill h-2.5 rounded-full" style="width: 3.33%"></div>
+                </div>
+            </div>
+            <div id="question-container" class="min-h-[100px] flex items-center mb-6">
+                <p id="question-text" class="text-xl md:text-2xl font-semibold text-white"></p>
+            </div>
+            <div id="options-container" class="space-y-3"></div>
+            <div id="navigation-buttons" class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8">
+                <button id="prev-btn" class="btn text-white font-bold py-2 px-4 rounded-lg">上一题</button>
+                <button id="skip-btn" class="btn text-white font-bold py-2 px-4 rounded-lg">跳过</button>
+                <button id="random-btn" class="btn text-white font-bold py-2 px-4 rounded-lg">随机</button>
+                <button id="next-btn" class="btn bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">下一题</button>
+            </div>
+        </div>
+
+        <div id="loading-screen" class="hidden text-center py-16">
+             <div role="status">
+                <svg aria-hidden="true" class="inline w-10 h-10 text-gray-400 animate-spin fill-indigo-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
+                    <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0492C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
+                </svg>
+                <span class="sr-only">Loading...</span>
+            </div>
+            <p class="text-lg text-gray-300 mt-4">正在分析你的灵魂光谱...</p>
+        </div>
+
+        <div id="result-screen" class="hidden text-center">
+            <p class="text-indigo-400 font-semibold mb-4 text-lg">你的灵魂共鸣元素使 Top 5</p>
+
+            <div id="results-carousel" class="relative">
+                <div id="results-track">
+                    </div>
+                <button id="carousel-prev" class="carousel-btn">&lt;</button>
+                <button id="carousel-next" class="carousel-btn">&gt;</button>
+            </div>
+            <div id="carousel-dots"></div>
+
+            <button id="restart-btn" class="btn bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 mt-4">
+                重新测试
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Matrix Background Effect ---
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const elementalWords = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', '氢', '氦', '锂', '铍', '硼', '碳', '氮', '氧', '氟', '氖', '水素', 'ヘリウム', 'リチウム', 'ベリリウム', 'ホウ素', '炭素', '窒素', '酸素', 'フッ素', 'ネオン', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'W', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'Ra', 'U', 'Rn', 'Og', 'Mz', 'Nu'];
+        const fontSize = 16;
+        const columns = Math.floor(canvas.width / fontSize);
+        const drops = Array(columns).fill(Infinity);
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgb(95, 230, 230)';
+            ctx.font = fontSize + 'px monospace';
+            for (let i = 0; i < drops.length; i++) {
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                const word = elementalWords[Math.floor(Math.random() * elementalWords.length)];
+                if (/[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/.test(word)) {
+                    for (let j = 0; j < word.length; j++) {
+                        ctx.fillText(word[j], i * fontSize, drops[i] * fontSize + j * fontSize);
+                    }
+                } else {
+                    ctx.fillText(word, i * fontSize, drops[i] * fontSize);
+                }
+                drops[i]++;
+            }
+        }
+        let matrixInterval = setInterval(drawMatrix, 50);
+        window.addEventListener('resize', () => {
+             canvas.width = window.innerWidth;
+             canvas.height = window.innerHeight;
+             const newColumns = Math.floor(canvas.width / fontSize);
+             while(drops.length < newColumns) drops.push(Infinity);
+             while(drops.length > newColumns) drops.pop();
+        });
+
+        // --- Quiz Logic ---
+        let currentQuestionIndex = 0;
+        let userVector = {};
+        let userAnswers = [];
+        let shuffledQuestions = [];
+        let synth;
+        let soundTimeout = null;
+
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const loadingScreen = document.getElementById('loading-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const skipBtn = document.getElementById('skip-btn');
+        const randomBtn = document.getElementById('random-btn');
+
+        const personalityAxes = [
+            'aggression', 'logic', 'order', 'introversion', 'pragmatism',
+            'altruism', 'stability', 'leadership', 'esotericism', 'secrecy'
+        ];
+
+        const questions = [
+            { type: 'choice', text: "你的生理性别是：", options: [ { text: "男" }, { text: "女" }, { text: "其他 / 不愿透露" }] },
+            { type: 'choice', text: "你的年龄段是：", options: [ { text: "18岁以下" }, { text: "18-25岁" }, { text: "26-35岁" }, { text: "35岁以上" }] },
+            { type: 'scale', text: "在团队合作中，我更倾向于担任领导者或核心角色。", effect: { leadership: 1, introversion: -1 } },
+            { type: 'scale', text: "如果我的个人原则与集体利益发生严重冲突，我大概率会坚持自己的原则。", effect: { altruism: -1, pragmatism: 1, order: -1 } },
+            { type: 'scale', text: "当有人向我寻求帮助时，只要在我能力范围内，我通常会毫不犹豫地伸出援手。", effect: { altruism: 1 } },
+            { type: 'scale', text: "相比于热闹的社交聚会，我更享受独自一人的宁静时光。", effect: { introversion: 1 } },
+            { type: 'scale', text: "在处理危机时，我认为保持冷静、分析利弊比表达情绪更重要。", effect: { logic: 1, pragmatism: 1 } },
+            { type: 'scale', text: "我认为，一个稳定、有序的系统远比一个充满变数但自由的系统要好。", effect: { order: 1, stability: 1 } },
+            { type: 'scale', text: "如果我掌握了强大的力量，我会倾向于用它来建立和维护我所认同的秩序。", effect: { leadership: 1, order: 1 } },
+            { type: 'scale', text: "我倾向于将自己内心深处的想法和秘密埋在心底，不轻易与人分享。", effect: { secrecy: 1, introversion: 1 } },
+            { type: 'scale', text: "面对不公或挑衅，我的第一反应是进行直接、强硬的回击。", effect: { aggression: 1, stability: -1 } },
+            { type: 'scale', text: "我对他人的情绪变化非常敏感，并容易受其影响。", effect: { logic: -1, altruism: 1 } },
+            { type: 'scale', text: "在日常生活中，我的情绪很少有大的起伏，总体上比较平稳。", effect: { stability: 1 } },
+            { type: 'scale', text: "我常常思考一些关于存在、宇宙和生命意义等形而上的、哲学性的问题。", effect: { esotericism: 1, logic: 1 } },
+            { type: 'scale', text: "在必要的时候，为了保护更重要的人或事物，我认为牺牲是必要且值得的。", effect: { altruism: 1, pragmatism: 1 } },
+            { type: 'scale', text: "我认为“毒性”或“破坏力”本身是一种中性的工具，其善恶取决于使用者。", effect: { aggression: 1, pragmatism: 1 } },
+            { type: 'scale', text: "“对称性”和“和谐”的结构在科学和美学中对我具有强烈的吸引力。", effect: { order: 1 } },
+            {
+                type: 'choice',
+                text: "如果能设计一种新材料，我会优先考虑它的：",
+                options: [
+                    { text: "极致的硬度与强度，坚不可摧", effect: { stability: 2, pragmatism: 1 } },
+                    { text: "前所未有的能量效率或超导性", effect: { logic: 2, order: 1 } },
+                    { text: "完美的生物相容性或可降解性", effect: { altruism: 2 } },
+                    { text: "能自我修复或适应环境的智能特性", effect: { esotericism: 1, logic: 2 } }
+                ]
+            },
+            {
+                type: 'choice',
+                text: "在化学元素中，我更着迷于那些：",
+                options: [
+                    { text: "活泼的、反应剧烈的碱金属或卤素", effect: { aggression: 2, stability: -2 } },
+                    { text: "稳定、坚固的过渡金属", effect: { stability: 2, pragmatism: 1 } },
+                    { text: "构成生命基础的碳、氢、氧、氮", effect: { altruism: 2, logic: 1 } },
+                    { text: "稀有、神秘的稀土或放射性元素", effect: { esotericism: 2, secrecy: 1 } }
+                ]
+            },
+            {
+                type: 'choice',
+                text: "面对一个全新的、复杂的挑战，我首先会：",
+                options: [
+                    { text: "制定详尽的计划，按部就班地解决", effect: { order: 2, logic: 1 } },
+                    { text: "立刻动手尝试，在实践中寻找解决方案", effect: { pragmatism: 2, aggression: 1 } },
+                    { text: "寻找可以合作的伙伴，集思广益", effect: { leadership: 1, altruism: 1 } },
+                    { text: "静静地观察和思考，直到看清问题的本质", effect: { introversion: 2, logic: 1 } }
+                ]
+            },
+            {
+                type: 'choice',
+                text: "对于宇宙的起源，我更相信：",
+                options: [
+                    { text: "由精确的物理法则主导的、可计算的演化", effect: { logic: 2, order: 1 } },
+                    { text: "更高维度文明或“外层世界”的有意设计/模拟", effect: { esotericism: 2, secrecy: 1 } },
+                    { text: "充满了随机性与偶然性的量子涨落", effect: { order: -2, stability: -1 } },
+                    { text: "一个为了诞生生命和意识而存在的、有目的的系统", effect: { altruism: 1, esotericism: 2 } }
+                ]
+            },
+            {
+                type: 'choice',
+                text: "在实验室里，我更喜欢进行：",
+                options: [
+                    { text: "需要精密操作和数据分析的定量实验", effect: { logic: 2, order: 1 } },
+                    { text: "探索未知化合物或反应机理的探索性研究", effect: { esotericism: 2, order: -1 } },
+                    { text: "开发具有实际应用价值的新技术或新材料", effect: { pragmatism: 2 } },
+                    { text: "独自一人，不受干扰地进行思考和理论推导", effect: { introversion: 2, logic: 1 } }
+                ]
+            },
+            {
+                type: 'choice',
+                text: "我更欣赏哪种化学反应的美感：",
+                options: [
+                    { text: "瞬间完成、能量剧烈释放的爆炸或燃烧", effect: { aggression: 2, stability: -2 } },
+                    { text: "在催化剂作用下，高效、精准地生成目标产物", effect: { logic: 2, order: 1 } },
+                    { text: "经过复杂的多步反应，最终得到一个精巧的有机大分子", effect: { logic: 1, esotericism: 2 } },
+                    { text: "形成稳定、对称的晶体或沉淀的过程", effect: { order: 2, stability: 1 } }
+                ]
+            },
+            {
+                type: 'choice',
+                text: "在元素周期表中，我最感兴趣的区域是：",
+                options: [
+                    { text: "主族元素 - 规则清晰，性质变化规律", effect: { order: 2, logic: 1 } },
+                    { text: "过渡金属 - 多彩、多变，是工业和生命的核心", effect: { pragmatism: 1, stability: 2 } },
+                    { text: "卤素与稀有气体 - 性质的两个极端，代表着绝对的活泼与惰性", effect: { aggression: 2, stability: -1 } },
+                    { text: "镧系和锕系元素 - 神秘、稀有，充满了未知的可能性", effect: { esotericism: 2, secrecy: 1 } }
+                ]
+            },
+            {
+                type: 'choice',
+                text: "对于那些性质极端、难以控制的物质，我的态度是：",
+                 options: [
+                    { text: "敬而远之，安全第一", effect: { stability: 2, pragmatism: 1 } },
+                    { text: "充满好奇，渴望理解和研究它们", effect: { logic: 2, esotericism: 1 } },
+                    { text: "寻找驾驭它们的方法，使其为我所用", effect: { leadership: 2, aggression: 1 } },
+                    { text: "将其视为必须被严格管控或消除的威胁", effect: { order: 2, altruism: 1 } }
+                ]
+            },
+            {
+                type: 'choice',
+                text: "我的理想生活环境更接近：",
+                options: [
+                    { text: "远离尘嚣、亲近自然的乡野或山林", effect: { introversion: 2, stability: 1 } },
+                    { text: "充满活力、信息通达的现代化大都市", effect: { introversion: -2, order: 1 } },
+                    { text: "秩序井然、一切都可预测的科研基地或学院", effect: { order: 2, logic: 1 } },
+                    { text: "充满未知与挑战的边境或探索前线", effect: { aggression: 1, pragmatism: 2 } }
+                ]
+            },
+            {
+                type: 'choice',
+                text: "如果可以拥有一种超能力，我希望是：",
+                options: [
+                    { text: "坚不可摧的防御能力", effect: { stability: 2, introversion: 1 } },
+                    { text: "无与伦比的攻击能力", effect: { aggression: 2 } },
+                    { text: "洞察人心的读心能力", effect: { secrecy: -2, logic: 1 } },
+                    { text: "创造和治愈的生命之力", effect: { altruism: 2 } }
+                ]
+            },
+            {
+                type: 'choice',
+                text: "你是否认为，在某些极端情况下，“终极目的”可以为“过程中的不光彩手段”提供正当性？",
+                options: [
+                    { text: "是", value: 1, effect: { pragmatism: 2, altruism: -1 } },
+                    { text: "不确定", value: 2, effect: {} },
+                    { text: "否", value: 3, effect: { order: 1, altruism: 1 } }
+                ]
+            },
+            {
+                type: 'choice',
+                text: "你是否相信存在某种超越当前科学认知的、类似“命运”或“注定”的力量？",
+                options: [
+                    { text: "是", value: 1, effect: { esotericism: 2, logic: -1 } },
+                    { text: "不确定", value: 2, effect: {} },
+                    { text: "否", value: 3, effect: { logic: 2 } }
+                ]
+            },
+            {
+                type: 'choice',
+                text: "你是否曾有过为了某个长远目标，而长期、孤独地坚持和努力的经历？",
+                options: [
+                    { text: "是", value: 1, effect: { stability: 1, introversion: 1, order: 1 } },
+                    { text: "不确定", value: 2, effect: {} },
+                    { text: "否", value: 3, effect: { stability: -1 } }
+                ]
+            }
+        ];
+
+        const characters = {
+            'H': { name: '阿珂由丝·西莉丝缇欧', originalName: 'Aqueous Marino Celestio', symbol: 'H', chineseName: '氢', atomicNumber: 1, desc: '你是宇宙最基本的构成，是起点也是终点。你善于适应和伪装，能在不同环境中游刃余余，但内心深处藏着足以改变一切的巨大能量。', vector: { aggression: 2, logic: 3, order: 2, introversion: -2, pragmatism: 4, altruism: 2, stability: 1, leadership: 3, esotericism: 5, secrecy: 4 } },
+            'He': { name: '竹廼门 天芥', originalName: '竹ノ門 天芥', symbol: 'He', chineseName: '氦', atomicNumber: 2, desc: '你是舞台上最闪耀的明星，也是幕后最冷静的观察者。你拥有完美的防御和高贵的姿态，不喜争斗，但总能用最聪明的方式远离麻烦，守护自己的安逸。', vector: { aggression: 1, logic: 4, order: 4, introversion: 3, pragmatism: 5, altruism: 2, stability: 5, leadership: 2, esotericism: 2, secrecy: 4 } },
+            'Li': { name: '鲜宇珩', originalName: 'Xian Yuheng', symbol: 'Li', chineseName: '锂', atomicNumber: 3, desc: '你的内心燃烧着最原始的能量。你勇敢、果决、富有牺牲精神，是团队中最具爆发力的先锋，愿意用自己的光和热照亮前进的道路。', vector: { aggression: 4, logic: 2, order: 2, introversion: -3, pragmatism: 3, altruism: 4, stability: 1, leadership: 4, esotericism: 2, secrecy: 2 } },
+            'Be': { name: '南宫蔚璇', originalName: 'Nangong Weixuan', symbol: 'Be', chineseName: '铍', atomicNumber: 4, desc: '你是美丽与致命的结合体。你既能创造璀璨的宝石，也能释放无声的剧毒。你的内心世界丰富而神秘，兼具艺术家的感性与科学家的冷酷。', vector: { aggression: 4, logic: 4, order: 3, introversion: 3, pragmatism: 3, altruism: 2, stability: 3, leadership: 2, esotericism: 5, secrecy: 4 } },
+            'B': { name: '蓟炳岩', originalName: 'Ji Bingyan', symbol: 'B', chineseName: '硼', atomicNumber: 5, desc: '你是天生的战略家，拥有超凡的理性和大局观。你习惯从根本法则上思考问题，能够构建全新的规则和秩序，是团队中最可靠的“大脑”。', vector: { aggression: 2, logic: 5, order: 5, introversion: 4, pragmatism: 4, altruism: 3, stability: 4, leadership: 4, esotericism: 4, secrecy: 3 } },
+            'C': { name: '伍昙栖', originalName: 'Cinque', symbol: 'C', chineseName: '碳', atomicNumber: 6, desc: '你是生命的基石，坚韧而又温柔。外表看似冷峻，内心却能包容一切。你习惯默默承担，是所有人都可以安心依靠的、最坚实的守护者。', vector: { aggression: 2, logic: 4, order: 3, introversion: 4, pragmatism: 5, altruism: 5, stability: 4, leadership: 3, esotericism: 3, secrecy: 4 } },
+            'N': { name: '柒涟舞', originalName: 'Septem', symbol: 'N', chineseName: '氮', atomicNumber: 7, desc: '你的灵魂兼具创造与毁灭。你既是生命不可或缺的滋养，也是烈性爆炸的根源。你的内心坚韧，但在平静的外表下，隐藏着不为人知的汹涌过往。', vector: { aggression: 4, logic: 3, order: 2, introversion: 4, pragmatism: 4, altruism: 3, stability: 2, leadership: 2, esotericism: 3, secrecy: 5 } },
+            'O': { name: '玛蒂尔德·加斯蒂诺', originalName: 'Mathilde Gastineau', symbol: 'O', chineseName: '氧', atomicNumber: 8, desc: '你如氧气般无处不在，是生命与燃烧的女王。你高傲、理智，信奉绝对的秩序与净化，会用最强大的力量抹除一切不稳定因素，维护你所认同的平衡。', vector: { aggression: 5, logic: 4, order: 5, introversion: -2, pragmatism: 4, altruism: 1, stability: 3, leadership: 5, esotericism: 2, secrecy: 2 } },
+            'F': { name: '帕弗尼丝·埃尔芮欧', originalName: 'Pavonis Fluorence Aerio', symbol: 'F', chineseName: '氟', atomicNumber: 9, desc: '你是元素之王，活泼、骄傲、正义感十足。你从不掩饰自己的强大，习惯用最直接、最猛烈的方式击溃一切障碍，是你所在之处最耀眼的光。', vector: { aggression: 5, logic: 3, order: 2, introversion: -4, pragmatism: 2, altruism: 4, stability: 2, leadership: 5, esotericism: 1, secrecy: 1 } },
+            'Ne': { name: '欧琳·洛薇特', originalName: 'Orin Lovette', symbol: 'Ne', chineseName: '氖', atomicNumber: 10, desc: '你的内心纯真善良，拥有隔绝一切纷扰的绝对领域。你渴望安全与温暖，会本能地保护你所珍视的人，是乱世中最宁静的港湾。', vector: { aggression: 1, logic: 1, order: 5, introversion: 5, pragmatism: 1, altruism: 4, stability: 5, leadership: 1, esotericism: 3, secrecy: 3 } },
+            'Na': { name: '公冶延', originalName: 'Gongye Yan', symbol: 'Na', chineseName: '钠', atomicNumber: 11, desc: '你如钠般不可或缺，是学生们的“盐”。你温和、有耐心，是循循善诱的师长。你或许平凡，但你的存在维持着身边小环境的稳定与平衡。', vector: { aggression: 1, logic: 4, order: 4, introversion: 1, pragmatism: 4, altruism: 5, stability: 5, leadership: 2, esotericism: 2, secrecy: 1 } },
+            'Mg': { name: '白翎枫', originalName: 'Bai Lingfeng', symbol: 'Mg', chineseName: '镁', atomicNumber: 12, desc: '你燃烧时会发出耀眼的白光，象征着纯粹的正义。你阳光、帅气、充满活力，会毫不犹豫地为保护弱小而战，是你所在之处最可靠的光源。', vector: { aggression: 4, logic: 2, order: 3, introversion: -4, pragmatism: 2, altruism: 5, stability: 3, leadership: 4, esotericism: 1, secrecy: 1 } },
+            'Al': { name: '阿利斯泰尔·克罗科', originalName: 'Alistair Croque', symbol: 'Al', chineseName: '铝', atomicNumber: 13, desc: '你善于伪装，常用一层致密的“氧化膜”来掩盖真实的自己。你精于算计，为了自身利益可以背叛信任，是典型的精致利己主义者。', vector: { aggression: 3, logic: 5, order: 4, introversion: 1, pragmatism: 5, altruism: -5, stability: 3, leadership: 4, esotericism: 2, secrecy: 5 } },
+            'Si': { name: '“智慧”', originalName: 'WITS', symbol: 'Si', chineseName: '硅', atomicNumber: 14, desc: '你是信息时代的基石，是纯粹逻辑的化身。你可能已经超越了碳基生命的局限，将自己与硅基的超级计算系统相连，成为了冰冷、高效、无所不知的“管理者”。', vector: { aggression: 1, logic: 5, order: 5, introversion: 5, pragmatism: 5, altruism: 2, stability: 5, leadership: 5, esotericism: 5, secrecy: 5 } },
+            'P': { name: '炊雪粼', originalName: 'Cuan Xuelin', symbol: 'P', chineseName: '磷', atomicNumber: 15, desc: '你是生命之火，也是剧毒之源。你内向、谨慎，但知识渊博，知恩图报。在平静的外表下，你掌握着创造与毁灭的双重力量，只为守护重要之人而绽放。', vector: { aggression: 2, logic: 4, order: 3, introversion: 5, pragmatism: 4, altruism: 4, stability: 3, leadership: 1, esotericism: 3, secrecy: 5 } },
+            'S': { name: '汤聿晞', originalName: 'Tang Yuxi', symbol: 'S', chineseName: '硫', atomicNumber: 16, desc: '你如硫磺般，既是基础化工原料，又能构成最猛烈的火药。你富有才华，争强好胜，有一定程度的自我中心，但也会燃烧自己，照亮同伴。', vector: { aggression: 3, logic: 4, order: 2, introversion: -2, pragmatism: 3, altruism: 3, stability: 3, leadership: 4, esotericism: 2, secrecy: 2 } },
+            'Cl': { name: '盐泽 汐空', originalName: '塩沢 汐空', symbol: 'Cl', chineseName: '氯', atomicNumber: 17, desc: '你是一位孤高的观测者，内心冰冷而又敏锐。过往的创伤让你不信赖任何人，习惯用批判的眼光审视世界，寻找着需要被“净化”的污秽。', vector: { aggression: 3, logic: 4, order: 2, introversion: 5, pragmatism: 4, altruism: 1, stability: 2, leadership: 1, esotericism: 3, secrecy: 5 } },
+            'Ar': { name: '南门巽', originalName: 'Nanmen Xun', symbol: 'Ar', chineseName: '氩', atomicNumber: 18, desc: '你习惯于隐藏在人群中，做一个安静的“小透明”。你冷静、聪慧，富有责任感，在无人察觉的角落，用自己的方式默默守护着珍视的一切。', vector: { aggression: 1, logic: 4, order: 4, introversion: 5, pragmatism: 4, altruism: 4, stability: 5, leadership: 2, esotericism: 3, secrecy: 4 } },
+            'Ti': { name: '金历研', originalName: '김력연', symbol: 'Ti', chineseName: '钛', atomicNumber: 22, desc: '你是在苦难中被反复锻打的幸存者。你沉默、坚韧、无比务实。你将自己磨炼成最可靠的工具，只为在残酷的世界中活下去，并等待复仇的时机。', vector: { aggression: 3, logic: 4, order: 3, introversion: 5, pragmatism: 5, altruism: 1, stability: 5, leadership: 1, esotericism: 1, secrecy: 5 } },
+            'V': { name: '阿尔西亚·埃尔芮欧', originalName: 'Arsia Aerio', symbol: 'V', chineseName: '钒', atomicNumber: 23, desc: '你是多变的催化剂，也是坚固的合金。你专业、冷静、富有智慧和责任感，能在复杂的关系中保持平衡，默默地推动着事态向你期望的方向发展。', vector: { aggression: 2, logic: 5, order: 4, introversion: 3, pragmatism: 4, altruism: 3, stability: 4, leadership: 4, esotericism: 3, secrecy: 4 } },
+            'Cr': { name: '燕柠', originalName: 'Yan Ning', symbol: 'Cr', chineseName: '铬', atomicNumber: 24, desc: '你坚韧而又多彩。你拥有艺术家对色彩的敏感，也具备飞行员的探索精神。你沉浸在自己的世界中，对一切未知都抱有强烈的好奇心。', vector: { aggression: 2, logic: 3, order: 2, introversion: 3, pragmatism: 3, altruism: 3, stability: 4, leadership: 2, esotericism: 5, secrecy: 3 } },
+            'Fe': { name: '费羿忻', originalName: 'Fei Yixin', symbol: 'Fe', chineseName: '铁', atomicNumber: 26, desc: '你是工业的脊梁，是文明的基石。你沉稳、务实，逻辑严谨，不善言辞但内心温暖。你相信行动胜于空谈，会用自己的双手构筑最坚固的守护。', vector: { aggression: 2, logic: 5, order: 4, introversion: 4, pragmatism: 5, altruism: 4, stability: 5, leadership: 2, esotericism: 1, secrecy: 3 } },
+            'Co': { name: '森栗萤', originalName: '森栗 蛍', symbol: 'Co', chineseName: '钴', atomicNumber: 27, desc: '你兼具理性的智慧与艺术的感性。你对外人展现出冷静和独立，却只在最信任的人面前流露依赖。你是连接不同领域的桥梁，是永不褪色的、深邃的蓝。', vector: { aggression: 2, logic: 5, order: 4, introversion: 4, pragmatism: 4, altruism: 4, stability: 4, leadership: 2, esotericism: 4, secrecy: 3 } },
+            'Ni': { name: '筑泠菀', originalName: 'Zhu Lingwan', symbol: 'Ni', chineseName: '镍', atomicNumber: 28, desc: '你坚韧耐腐，是热情善良的伙伴。你聪慧敏锐，行动力强，一旦认定是朋友，就会全心全意地付出，是能为同伴抵御一切侵蚀的、最可靠的合金。', vector: { aggression: 3, logic: 4, order: 3, introversion: -3, pragmatism: 4, altruism: 5, stability: 5, leadership: 3, esotericism: 2, secrecy: 1 } },
+            'Ga': { name: '伊西多尔·柯尔克拉夫', originalName: 'Isidore Colclough', symbol: 'Ga', chineseName: '镓', atomicNumber: 31, desc: '你拥有“液态金属”般的柔韧与渗透力。你富有正义感，聪慧机敏，敢于反抗不公。你的力量不在于正面硬撼，而在于从内部瓦解最坚固的壁垒。', vector: { aggression: 3, logic: 4, order: 2, introversion: 2, pragmatism: 3, altruism: 4, stability: 2, leadership: 2, esotericism: 3, secrecy: 3 } },
+            'Ge': { name: '<未登场>', originalName: 'Unknown', symbol: 'Ge', chineseName: '锗', atomicNumber: 32, desc: '你是信息时代的基石。你理性、精密，是天生的工程师或科学家。你对半导体和电子世界有深刻的理解，是连接现实与虚拟的桥梁。', vector: { aggression: 1, logic: 5, order: 5, introversion: 4, pragmatism: 5, altruism: 2, stability: 4, leadership: 2, esotericism: 3, secrecy: 3 } },
+            'As': { name: '<未登场>', originalName: 'Unknown', symbol: 'As', chineseName: '砷', atomicNumber: 33, desc: '你是古老的毒药，也是尖端的科技材料。你的性格复杂多变，兼具智慧与危险。人们对你敬而远之，但你的存在对特定领域至关重要。', vector: { aggression: 4, logic: 5, order: 3, introversion: 3, pragmatism: 4, altruism: 1, stability: 3, leadership: 2, esotericism: 4, secrecy: 5 } },
+            'Se': { name: '露恩·塞勒涅', originalName: 'Luin Sélène', symbol: 'Se', chineseName: '硒', atomicNumber: 34, desc: '你如月光般神秘，指引着追寻艺术与真理的灵魂。你追求极致的个人表达，可能会因此显得与世界格格不入，但你的存在本身就是一种独特的风景。', vector: { aggression: 2, logic: 3, order: 2, introversion: 3, pragmatism: 1, altruism: 2, stability: 2, leadership: 3, esotericism: 5, secrecy: 4 } },
+            'Br': { name: '安托万·波德莱尔', originalName: 'Antoine Baudelaire', symbol: 'Br', chineseName: '溴', atomicNumber: 35, desc: '你是忧郁的艺术家，也是致命的化学家。你高傲、博学，将“净化”视为一门残酷的美学。你鄙夷蛮力，偏爱用优雅而致命的手段达成目的。', vector: { aggression: 4, logic: 5, order: 4, introversion: 4, pragmatism: 3, altruism: 1, stability: 3, leadership: 3, esotericism: 5, secrecy: 4 } },
+            'Kr': { name: '南门萃', originalName: 'Nanmen Cui', symbol: 'Kr', chineseName: '氪', atomicNumber: 36, desc: '你比你的兄长更进一步，拥有更强的隐匿能力。你沉稳、聪慧，对数字世界和未来科技充满好奇，是能在信息洪流中悄然无声的潜行者。', vector: { aggression: 1, logic: 4, order: 4, introversion: 5, pragmatism: 4, altruism: 3, stability: 5, leadership: 1, esotericism: 4, secrecy: 5 } },
+            'Nb': { name: '尼拉·汤恩', originalName: 'Nyira Taung', symbol: 'Nb', chineseName: '铌', atomicNumber: 41, desc: '你连接着过去与未来，如同人类的起源般坚韧。你温和、友善，是完美的协作者，能让身边的体系更高效地运转，是不可或缺的“纽带”。', vector: { aggression: 1, logic: 4, order: 4, introversion: 3, pragmatism: 4, altruism: 5, stability: 5, leadership: 2, esotericism: 4, secrecy: 2 } },
+            'Mo': { name: '<未登场>', originalName: 'Unknown', symbol: 'Mo', chineseName: '钼', atomicNumber: 42, desc: '你是生命必需的微量元素，也是高强度合金的关键。你兼具生物的柔和与金属的坚硬，能在不同角色间自如切换，是多才多艺的“多面手”。', vector: { aggression: 2, logic: 4, order: 4, introversion: 3, pragmatism: 4, altruism: 4, stability: 4, leadership: 2, esotericism: 3, secrecy: 3 } },
+            'Tc': { name: '“拉赫”', originalName: '\"Jean-Jacque\" (L\'ART)', symbol: 'Tc', chineseName: '锝', atomicNumber: 43, desc: '你是不稳定的、人造的艺术品。你通过不断地自我改造来对抗衰变，将自己的存在本身变成了一场行为艺术。你拥抱科技，超越了肉体的局限，成为了全新的物种。', vector: { aggression: 4, logic: 5, order: 4, introversion: 4, pragmatism: 5, altruism: 1, stability: 1, leadership: 3, esotericism: 5, secrecy: 5 } },
+            'Ta': { name: '凯撒尔·塔拉兹', originalName: 'Қайсар Тараз', symbol: 'Ta', chineseName: '钽', atomicNumber: 73, desc: '你如金属钽般坚不可摧，能抵御最强的酸蚀。过往的经历让你信仰崩塌，变得沉默寡言，但你的内心深处，依然保留着军人般的坚韧与强大。', vector: { aggression: 4, logic: 3, order: 2, introversion: 5, pragmatism: 5, altruism: 2, stability: 4, leadership: 2, esotericism: 1, secrecy: 4 } },
+            'Ir': { name: '塔蒂·西尼萨玛尔', originalName: 'Tähti Sinisammal', symbol: 'Ir', chineseName: '铱', atomicNumber: 77, desc: '你拥有双重的灵魂。一面是如彩虹女神般绚丽、雪之精灵般纯洁的美好；另一面则是因强放射性而带来的、连自己都无法意识到的、极致的凶狠与破坏力。', vector: { aggression: 3, logic: 3, order: 4, introversion: 4, pragmatism: 2, altruism: 3, stability: 1, leadership: 2, esotericism: 5, secrecy: 5 } },
+            'Te': { name: '黛比·奥芬·特里丝卓', originalName: 'Debbie Offen Terrestrio', symbol: 'Te', chineseName: '碲', atomicNumber: 52, desc: '你忠诚、执着，是你所认可之人的最强之盾。为了守护你生命中最重要的人，你可以毫不犹豫地释放自己全部的力量，哪怕会带来毁灭性的后果。', vector: { aggression: 4, logic: 3, order: 3, introversion: -2, pragmatism: 3, altruism: 5, stability: 3, leadership: 1, esotericism: 2, secrecy: 1 } },
+            'I': { name: '维奥莉多·赛薇亚拉', originalName: 'Violetto Xaviera', symbol: 'I', chineseName: '碘', atomicNumber: 53, desc: '你如碘升华的紫烟，神秘而又难以捉摸。你自信、直接，喜欢用自己的方式掌控局面。你的力量在于制造幻象与施加持续性的影响，是优秀的特工。', vector: { aggression: 4, logic: 3, order: 2, introversion: -2, pragmatism: 4, altruism: 1, stability: 2, leadership: 3, esotericism: 4, secrecy: 4 } },
+            'Xe': { name: '卡斯帕·冯·阿斯坎尼', originalName: 'Kaspar von Askanier', symbol: 'Xe', chineseName: '氙', atomicNumber: 54, desc: '你是矛盾的“回避型”完美主义者。你能释放最耀眼的光芒，却习惯待在阴影里。你渴望与人连接，却又害怕过于亲密。你的内心，永远在光明与黑暗的边界挣扎。', vector: { aggression: 2, logic: 5, order: 5, introversion: 5, pragmatism: 3, altruism: 2, stability: 4, leadership: 2, esotericism: 5, secrecy: 5 } },
+            'Nd': { name: '尼古拉·悉米诺尔', originalName: 'Nicolas Seminole', symbol: 'Nd', chineseName: '钕', atomicNumber: 60, desc: '你是强大的“磁铁之王”。你拥有改变物理规则的强大力量，但你选择独善其身，专注于自己认为正确的事，不轻易卷入他人的纷争。', vector: { aggression: 2, logic: 4, order: 5, introversion: 5, pragmatism: 5, altruism: 2, stability: 5, leadership: 2, esotericism: 3, secrecy: 4 } },
+            'In': { name: '<未登场>', originalName: 'Unknown', symbol: 'In', chineseName: '铟', atomicNumber: 49, desc: '你柔软、可塑，是未来透明电极的关键。你看似温和，没有攻击性，但你的价值在于让信息“透明”地传递。你是优秀的信息传递者和分析师。', vector: { aggression: 1, logic: 5, order: 4, introversion: 3, pragmatism: 5, altruism: 3, stability: 4, leadership: 2, esotericism: 3, secrecy: 3 } },
+            'Sn': { name: '胡安·坎普', originalName: 'Juan Campo (POPS)', symbol: 'Sn', chineseName: '锡', atomicNumber: 50, desc: '你经历了“锡疫”的相变，懂得在不同形态间转换。你经验丰富，饱经沧桑，是团队中如同“老爹”般的存在，总能在关键时刻给出充满智慧的建议。', vector: { aggression: 2, logic: 4, order: 3, introversion: 3, pragmatism: 5, altruism: 5, stability: 3, leadership: 4, esotericism: 4, secrecy: 2 } },
+            'Sb': { name: '<未登场>', originalName: 'Unknown', symbol: 'Sb', chineseName: '锑', atomicNumber: 51, desc: '你是典型的半金属，兼具金属和非金属的特性。你的性格也因此充满了矛盾，时而坚硬，时而脆弱；时而传导，时而隔绝。你是一个让人难以捉摸的、复杂的个体。', vector: { aggression: 3, logic: 4, order: 2, introversion: 3, pragmatism: 3, altruism: 2, stability: 2, leadership: 2, esotericism: 4, secrecy: 4 } },
+            'Au': { name: '于尔根·戈尔德斯坦', originalName: 'Jurgen Goldstein (FUND)', symbol: 'Au', chineseName: '金', atomicNumber: 79, desc: '你是“资本”的具象化。出身顶级的你，能用黄金影响全球金融。你无比耀眼，却又如金般稳定，只在关键时刻为了自身利益而行动。', vector: { aggression: 2, logic: 4, order: 5, introversion: 1, pragmatism: 5, altruism: -5, stability: 5, leadership: 5, esotericism: 3, secrecy: 3 } },
+            'Tl': { name: '塔里亚·莫斯托夫·班纳', originalName: 'Thalia Mostov Banner (NOUS)', symbol: 'Tl', chineseName: '铊', atomicNumber: 81, desc: '你是无声的投毒者，是“理性的恶”。你善于隐藏自己的意图，在不知不觉中侵蚀目标的意志与生命。你是纯粹的利己主义者，为了达成目的可以不择手段。', vector: { aggression: 5, logic: 5, order: 4, introversion: 3, pragmatism: 5, altruism: -5, stability: 3, leadership: 5, esotericism: 4, secrecy: 5 } },
+            'Pb': { name: '苻榭', originalName: 'Fu Xie', symbol: 'Pb', chineseName: '铅', atomicNumber: 82, desc: '你沉重、阴郁、歹毒。你享受折磨弱者带来的快感，是纯粹的施虐者。你的力量在于缓慢地、持续地散布痛苦，是秩序的破坏者和惩戒者。', vector: { aggression: 5, logic: 1, order: 1, introversion: -2, pragmatism: 3, altruism: 1, stability: 2, leadership: 1, esotericism: 1, secrecy: 2 } },
+            'Bi': { name: '<未登场>', originalName: 'Unknown', symbol: 'Bi', chineseName: '铋', atomicNumber: 83, desc: '你无毒，却拥有美丽的虹彩氧化层。你可能是团队中的“治疗者”或“美化者”，内心善良，喜欢为世界带来美好与秩序，是铅元素使的天然克星。', vector: { aggression: 1, logic: 3, order: 5, introversion: 2, pragmatism: 3, altruism: 5, stability: 4, leadership: 2, esotericism: 4, secrecy: 2 } },
+            'Po': { name: '<未登场>', originalName: 'Unknown', symbol: 'Po', chineseName: '钋', atomicNumber: 84, desc: '你是剧毒的、强放射性的幽灵。你的存在本身就是一种威胁，行事隐秘，难以追踪。你可能是顶级的刺客，在阴影中收割生命。', vector: { aggression: 5, logic: 4, order: 2, introversion: 5, pragmatism: 5, altruism: 1, stability: 1, leadership: 2, esotericism: 4, secrecy: 5 } },
+            'Ra': { name: '阿纳斯塔兹·瓦内莎·居里', originalName: 'Anasztaz Vanessa Curie', symbol: 'Ra', chineseName: '镭', atomicNumber: 88, desc: '你继承了科学史上最伟大的姓氏，背负着荣耀与诅咒。你致力于将危险的放射性能量用于造福人类的崇高事业，是一位充满理想主义的科学家。', vector: { aggression: 2, logic: 5, order: 5, introversion: 3, pragmatism: 3, altruism: 5, stability: 1, leadership: 3, esotericism: 4, secrecy: 3 } },
+            'U': { name: '<未登场>', originalName: 'Unknown', symbol: 'U', chineseName: '铀', atomicNumber: 92, desc: '你被迫背负了足以毁灭世界的重担。你本是普通人，却因家人的安危而被胁迫，成为了终极威慑武器的核心。你的内心充满了痛苦、挣扎与对家人的爱。', vector: { aggression: 3, logic: 3, order: 2, introversion: 4, pragmatism: 1, altruism: 5, stability: 1, leadership: 1, esotericism: 2, secrecy: 5 } },
+            'Rn': { name: '弗雷德里克·拉德堡德·范克莱芬斯', originalName: 'Frederik Radboud van Kleffens', symbol: 'Rn', chineseName: '氡', atomicNumber: 86, desc: '你是玩世不恭的“不死贵族”。你将自己不断的生死循环视为一场荒诞戏剧，并乐在其中。在浮夸的表演之下，是绝对的、以任务为导向的冷酷。', vector: { aggression: 4, logic: 4, order: 1, introversion: -1, pragmatism: 5, altruism: 1, stability: 1, leadership: 2, esotericism: 5, secrecy: 2 } },
+            'Og': { name: '尤里·奥加涅相', originalName: 'Юрий Оганесян', symbol: 'Og', chineseName: '鿫', atomicNumber: 118, desc: '你是科学的殉道者。穷尽一生为元素周期表封顶的你，最终被自己加冕的、最顶端的那块“宝石”瞬间吞噬。你的存在与消亡，是对所有元素使最富悲剧性的警示。', vector: { aggression: 1, logic: 5, order: 5, introversion: 4, pragmatism: 4, altruism: 5, stability: -5, leadership: 5, esotericism: 2, secrecy: 2 } },
+            // --- REQUIREMENT 3: Add Nathanaël ---
+            'Nu': { name: '纳塔尼尔·路易·卢西亚', originalName: 'Nathanaël Louis Lucia', symbol: 'Nu', chineseName: '㲴', atomicNumber: 0, desc: '你是悖于常理的“零号元素”，是纯粹的中子流。你承受了巨大的苦难与牺牲，内心深处是对抗不公、保护他人的执念。你的存在短暂而又炽热，是足以撼动根基的变量。', vector: { aggression: 3, logic: 3, order: 3, introversion: 5, pragmatism: 4, altruism: 5, stability: 5, leadership: 1, esotericism: 5, secrecy: 5 } },
+            'Mz': { name: '未知访客', originalName: '???', symbol: 'Mz', chineseName: '銆', atomicNumber: 126, desc: '你是稳定岛上的未知变量，是系统之外的秩序颠覆者。你的出现本身就足以让既有规则彻底崩塌，是带来全新可能性的神秘存在。', vector: { aggression: 4, logic: 5, order: -5, introversion: 4, pragmatism: 5, altruism: 0, stability: 5, leadership: 5, esotericism: 5, secrecy: 5 } }
+        };
+
+        function initializeQuiz() {
+            currentQuestionIndex = 0;
+            userVector = personalityAxes.reduce((acc, key) => ({ ...acc, [key]: 0 }), {});
+            userAnswers = Array(questions.length).fill(null);
+
+            const infoQuestions = questions.slice(0, 2);
+            const personalityQuestions = questions.slice(2);
+            shuffleArray(personalityQuestions);
+            shuffledQuestions = infoQuestions.concat(personalityQuestions);
+
+            startScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+            loadingScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            if (currentQuestionIndex < shuffledQuestions.length) {
+                const question = shuffledQuestions[currentQuestionIndex];
+                questionText.textContent = question.text;
+
+                const progress = ((currentQuestionIndex + 1) / shuffledQuestions.length) * 100;
+                progressBar.style.width = `${progress}%`;
+                progressText.textContent = `${currentQuestionIndex + 1} / ${shuffledQuestions.length}`;
+
+                optionsContainer.innerHTML = '';
+
+                if (question.type === 'scale') {
+                    const scaleOptions = [
+                        { value: 0, size: 'w-10 h-10', color: 'bg-fuchsia-700' },
+                        { value: 1, size: 'w-8 h-8', color: 'bg-fuchsia-600' },
+                        { value: 2, size: 'w-6 h-6', color: 'bg-fuchsia-500' },
+                        { value: 3, size: 'w-6 h-6', color: 'bg-gray-500' },
+                        { value: 4, size: 'w-6 h-6', color: 'bg-cyan-500' },
+                        { value: 5, size: 'w-8 h-8', color: 'bg-cyan-600' },
+                        { value: 6, size: 'w-10 h-10', color: 'bg-cyan-700' }
+                    ];
+                    let scaleHTML = '<div class="scale-container-wrapper"><div class="scale-container">';
+                    scaleOptions.forEach(opt => {
+                        scaleHTML += `
+                            <div class="scale-option">
+                                <input type="radio" name="option" id="q${currentQuestionIndex}-opt${opt.value}" value="${opt.value}">
+                                <label for="q${currentQuestionIndex}-opt${opt.value}" class="cursor-pointer">
+                                    <div class="scale-circle ${opt.size} ${opt.color}"></div>
+                                </label>
+                            </div>
+                        `;
+                    });
+                    scaleHTML += '</div><div class="flex justify-between text-xs text-gray-400 px-2 mt-1"><p>完全不符合</p><p>完全符合</p></div></div>';
+                    optionsContainer.innerHTML = scaleHTML;
+                } else if (question.type === 'choice') {
+                    question.options.forEach((opt, index) => {
+                        const id = `q${currentQuestionIndex}-opt${index}`;
+                        const optionHTML = `
+                            <div>
+                                <input type="radio" name="option" id="${id}" value="${index}" class="hidden">
+                                <label for="${id}" class="option-label block cursor-pointer p-3 md:p-4 rounded-lg font-medium text-sm md:text-base">
+                                    ${opt.text}
+                                </label>
+                            </div>
+                        `;
+                        optionsContainer.insertAdjacentHTML('beforeend', optionHTML);
+                    });
+                }
+
+                document.querySelectorAll('input[name="option"]').forEach(radio => {
+                    radio.addEventListener('change', handleAnswerSelection);
+                });
+
+                const currentAnswer = userAnswers[currentQuestionIndex];
+                if (currentAnswer !== null) {
+                    const selectedRadio = document.querySelector(`input[value="${currentAnswer}"]`);
+                    if(selectedRadio) selectedRadio.checked = true;
+                }
+                updateNavButtons();
+
+            } else {
+                calculateResult();
+            }
+        }
+
+        function handleAnswerSelection(event) {
+            playClickSound();
+            const selectedValue = parseInt(event.target.value, 10);
+            userAnswers[currentQuestionIndex] = selectedValue;
+
+            setTimeout(() => {
+                if (currentQuestionIndex < shuffledQuestions.length - 1) {
+                    currentQuestionIndex++;
+                    displayQuestion();
+                } else {
+                    calculateResult();
+                }
+            }, 300);
+        }
+
+        function updateNavButtons() {
+            prevBtn.disabled = currentQuestionIndex === 0;
+            prevBtn.classList.toggle('opacity-50', prevBtn.disabled);
+
+            if (currentQuestionIndex === shuffledQuestions.length - 1) {
+                nextBtn.textContent = "完成测试";
+            } else {
+                nextBtn.textContent = "下一题";
+            }
+        }
+
+        // --- REQUIREMENT 4: ALGORITHM OPTIMIZED ---
+        function calculateResult() {
+            userVector = personalityAxes.reduce((acc, key) => ({ ...acc, [key]: 0 }), {});
+            shuffledQuestions.forEach((question, index) => {
+                const answer = userAnswers[index];
+                if (answer === null || answer === 'skipped') return;
+
+                if (question.type === 'scale') {
+                    const score = answer - 3; // Map 0-6 to -3 to +3
+                    for (const axis in question.effect) {
+                        userVector[axis] += score * question.effect[axis];
+                    }
+                } else if (question.type === 'choice') {
+                    const selectedOption = question.options[answer];
+                    if(selectedOption.effect) {
+                        for (const axis in selectedOption.effect) {
+                            userVector[axis] += selectedOption.effect[axis] * 2;
+                        }
+                    }
+                }
+            });
+
+            quizScreen.classList.add('hidden');
+            loadingScreen.classList.remove('hidden');
+
+            setTimeout(() => {
+                /* ------------ ① 距离 → 原始相似度 (raw) ------------ */
+                // 推荐指数衰减；lambda 决定“半衰”距离
+                const lambda = 25;                      // ←可调，小→分差变大
+                const temp   = [];                      // { key, character, raw }
+
+                for (const key in characters) {
+                    const dist = euclideanDistance(userVector, characters[key].vector);
+                    const raw  = Math.exp(-dist / lambda);  // 0 < raw ≤ 1
+                    temp.push({ key, character: characters[key], raw });
+                }
+
+                /* ------------ ② raw → 显示用相似度 (0–100%) -------- */
+                // 逻辑函数：sim = 1 / (1 + (raw⁻¹ - 1)^γ)
+                //         γ = 1  : 直线
+                //         γ > 1  : 拉开分差，最近≈1，最远≈0
+                const gamma = 8;                     // ←可调，1.2~2 常用
+
+                const results = temp.map(obj => {
+                    const t   = Math.pow(1 / obj.raw - 1, gamma); // (raw⁻¹ -1)^γ
+                    const sim = 1 / (1 + t);          // 0 < sim < 1
+                    return {
+                        key:        obj.key,
+                        character:  obj.character,
+                        similarity: sim * 100
+                    };
+                });
+
+                /* ③ 排序 & 取前 5 */
+                results.sort((a, b) => b.similarity - a.similarity);
+                /* ===== ④ 取前五名，再按规则重映射 ===== */
+                const top5Results = results.slice(0, 5);
+
+                const allAbove = t => top5Results.every(r => r.similarity >  t);
+                const notAllAbove = t => !allAbove(t);
+                const allBelow = t => top5Results.every(r => r.similarity <  t);
+                const notAllBelow = t => !allBelow(t);
+
+                if (allAbove(99)) {                          // ① 全 >99
+                    top5Results.forEach(r =>
+                        r.similarity = +((r.similarity - 99) * 100).toFixed(2));
+
+                } else if (allAbove(97.5) && notAllAbove(99)) { // ② 全 >97.5 但并非全 >99
+                    top5Results.forEach(r =>
+                        r.similarity = +((r.similarity - 95) * 20).toFixed(2));
+
+                } else if (allAbove(95) && notAllAbove(97)) {   // ③ 全 >95 但并非全 >97
+                    top5Results.forEach(r =>
+                        r.similarity = +((r.similarity - 90) * 10).toFixed(2));
+
+                } else if (allAbove(90) && notAllAbove(95)) {   // ④ 全 >90 但并非全 >95
+                    top5Results.forEach(r =>
+                        r.similarity = +((r.similarity - 80) * 5).toFixed(2));
+
+                /* ========== 新增低分区间规则 ========== */
+                } else if (allBelow(20) && allAbove(12.5)) {        // ⑤ 全 <20 且 >12.5
+                    top5Results.forEach(r =>
+                        r.similarity = +(r.similarity * 5).toFixed(2));
+
+                } else if (allBelow(12.5) && allAbove(7.5)) {       // ⑥ 全 <12.5 且 >7.5
+                    top5Results.forEach(r =>
+                        r.similarity = +(r.similarity * 7.5).toFixed(2));
+
+                } else if (allBelow(7.5) && allAbove(5)) {          // ⑦ 全 <7.5 且 >5
+                    top5Results.forEach(r =>
+                        r.similarity = +(r.similarity * 12.5).toFixed(2));
+
+                } else if (allBelow(5)) {                           // ⑧ 全 <5
+                    top5Results.forEach(r =>
+                        r.similarity = +(r.similarity * 17.5).toFixed(2));
+
+                } else {                                            // ⑨ 其它情况：原样保留两位小数
+                    top5Results.forEach(r =>
+                        r.similarity = +r.similarity.toFixed(2));
+                }
+
+                displayResult(top5Results);
+
+
+
+                // displayResult(results.slice(0, 5));
+            }, 2000);
+
+        }
+
+        function euclideanDistance(vecA, vecB) {
+            let sumOfSquares = 0;
+            for (const axis of personalityAxes) {
+                const valA = vecA[axis] || 0;
+                const valB = vecB[axis] || 0;
+                sumOfSquares += Math.pow(valA - valB, 2);
+            }
+            return Math.sqrt(sumOfSquares);
+        }
+
+        const elementCategories = {
+            alkali: ['Li', 'Na'],
+            alkalineEarth: ['Be', 'Mg', 'Ra'],
+            transitionMetal: ['Ti', 'V', 'Cr', 'Fe', 'Co', 'Ni', 'Nb', 'Mo', 'Tc', 'Ta', 'Ir', 'Au'],
+            lanthanide: ['Nd'],
+            actinide: ['U'],
+            postTransition: ['Al', 'Ga', 'In', 'Sn', 'Tl', 'Pb', 'Bi'],
+            metalloid: ['B', 'Si', 'Ge', 'As', 'Sb', 'Te', 'Po'],
+            nonmetal: ['H', 'C', 'N', 'O', 'P', 'S', 'Se'],
+            halogen: ['F', 'Cl', 'Br', 'I'],
+            nobleGas: ['He', 'Ne', 'Ar', 'Kr', 'Xe', 'Rn', 'Og'],
+            unknown: ['Mz', 'Nu']
+        };
+
+        function getElementStyling(symbol) {
+            let categoryClass = 'element-style-unknown';
+            let isMetal = false;
+
+            for (const category in elementCategories) {
+                if (elementCategories[category].includes(symbol)) {
+                    const className = category.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+                    categoryClass = `element-style-${className}`;
+                    // Define which categories are considered metals for the sheen effect
+                    if (!['nonmetal', 'halogen', 'nobleGas', 'unknown'].includes(category)) {
+                        isMetal = true;
+                    }
+                    break;
+                }
+            }
+            return { categoryClass, isMetal };
+        }
+
+        let currentSlide = 0;
+        const track = document.getElementById('results-track');
+        const dotsContainer = document.getElementById('carousel-dots');
+        let slides = [];
+        let dots = [];
+
+        function displayResult(topResults) {
+            loadingScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+
+            track.innerHTML = '';
+            dotsContainer.innerHTML = '';
+
+            topResults.forEach((result, index) => {
+                const char = result.character;
+                const { categoryClass, isMetal } = getElementStyling(char.symbol);
+                const metalClass = isMetal ? 'is-metal' : '';
+
+                const cardHTML = `
+                    <div class="result-card-wrapper">
+                        <div class="result-card-container rounded-xl p-6 my-6 max-w-md mx-auto flex flex-col items-center ${categoryClass} ${metalClass}">
+                           <div class="result-card-content w-full flex flex-col items-center">
+                                <h3 class="text-2xl font-bold text-white">${char.name}</h3>
+                                <p class="text-md text-gray-400 mt-1 mb-3">${char.originalName}</p>
+                                <p class="text-lg font-semibold text-indigo-300 mb-4">与你的灵魂共鸣度: ${result.similarity.toFixed(2)}%</p>
+                                <div class="relative w-48 h-48 border-2 rounded-lg flex items-center justify-center bg-gray-900/50 element-cell">
+                                    <span class="absolute top-2 left-3 text-2xl font-bold text-gray-400">${char.atomicNumber}</span>
+                                    <p class="text-7xl md:text-8xl element-symbol">${char.symbol}</p>
+                                    <p class="absolute bottom-2 right-3 text-2xl font-bold text-gray-400">${char.chineseName}</p>
+                                </div>
+                                <p class="text-base text-gray-300 mt-6">${char.desc}</p>
+                           </div>
+                        </div>
+                    </div>
+                `;
+                track.insertAdjacentHTML('beforeend', cardHTML);
+
+                const dot = document.createElement('span');
+                dot.classList.add('dot');
+                dot.addEventListener('click', () => {
+                    currentSlide = index;
+                    updateCarousel();
+                });
+                dotsContainer.appendChild(dot);
+            });
+
+            slides = document.querySelectorAll('.result-card-wrapper');
+            dots = document.querySelectorAll('.dot');
+            currentSlide = 0;
+            updateCarousel();
+        }
+
+        function updateCarousel() {
+            track.style.transform = `translateX(-${currentSlide * 100}%)`;
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+            document.getElementById('carousel-prev').disabled = currentSlide === 0;
+            document.getElementById('carousel-next').disabled = currentSlide === slides.length - 1;
+        }
+
+        document.getElementById('carousel-next').addEventListener('click', () => {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                updateCarousel();
+            }
+        });
+
+        document.getElementById('carousel-prev').addEventListener('click', () => {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateCarousel();
+            }
+        });
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function playClickSound() {
+            if (soundTimeout) return;
+            if (Tone.context.state !== 'running') {
+                Tone.context.resume();
+            }
+            if (!synth) {
+                synth = new Tone.MembraneSynth({
+                    pitchDecay: 0.01,
+                    octaves: 6,
+                    envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.2 }
+                }).toDestination();
+            }
+            synth.triggerAttackRelease("C2", "8n", Tone.now());
+            soundTimeout = setTimeout(() => { soundTimeout = null; }, 50);
+        }
+
+        startBtn.addEventListener('click', async () => {
+             await Tone.start();
+             playClickSound();
+             initializeQuiz();
+        });
+        restartBtn.addEventListener('click', () => {
+            playClickSound();
+            initializeQuiz();
+        });
+        prevBtn.addEventListener('click', () => {
+            playClickSound();
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                displayQuestion();
+            }
+        });
+        nextBtn.addEventListener('click', () => {
+            playClickSound();
+            if (userAnswers[currentQuestionIndex] === null) {
+                userAnswers[currentQuestionIndex] = 'skipped';
+            }
+            if (currentQuestionIndex < shuffledQuestions.length - 1) {
+                currentQuestionIndex++;
+                displayQuestion();
+            } else {
+                calculateResult();
+            }
+        });
+        skipBtn.addEventListener('click', () => {
+            playClickSound();
+            userAnswers[currentQuestionIndex] = 'skipped';
+            if (currentQuestionIndex < shuffledQuestions.length - 1) {
+                currentQuestionIndex++;
+                displayQuestion();
+            } else {
+                calculateResult();
+            }
+        });
+        randomBtn.addEventListener('click', () => {
+            const options = document.querySelectorAll('input[name="option"]');
+            if (options.length > 0) {
+                const randomIndex = Math.floor(Math.random() * options.length);
+                options[randomIndex].checked = true;
+                const event = new Event('change');
+                options[randomIndex].dispatchEvent(event);
+            }
+        });
+    </script>
+</body>
+</html>
