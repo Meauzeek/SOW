@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随星录：元素使抽卡模拟器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background-color: #000;
+            color: #e5e7eb;
+            overflow-x: hidden;
+        }
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        .app-container {
+            background-color: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(55, 65, 81, 0.6);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+            min-height: 520px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .btn {
+            transition: all 0.3s ease-in-out;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            border-radius: 0.5rem;
+            padding: 0.75rem 2rem;
+            font-weight: bold;
+            color: white;
+        }
+        .btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.5);
+        }
+        .btn-primary {
+             background-image: linear-gradient(to right, #4f46e5 0%, #a855f7 100%);
+             border: none;
+        }
+        .btn-secondary {
+             background-image: linear-gradient(to right, #6d28d9 0%, #9333ea 100%);
+             border: none;
+        }
+        .btn-muted {
+            background-color: rgba(55, 65, 81, 0.7);
+            border: 1px solid #4b5563;
+        }
+        .btn-muted:hover {
+             border-color: #818cf8;
+        }
+
+        /* 卡片和结果样式 */
+        .result-card-wrapper { min-width: 100%; padding: 0 8px; box-sizing: border-box; perspective: 1000px; }
+        .result-card-container {
+            position: relative;
+            border-radius: 1rem;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+            border: 1px solid rgba(255,255,255,0.1);
+            background-color: #111827;
+            background-image:
+                radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0),
+                radial-gradient(circle at 15px 15px, rgba(255,255,255,0.05) 1px, transparent 0);
+            background-size: 30px 30px;
+        }
+        .result-card-container::before {
+            content: '';
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.05), rgba(255,255,255,0));
+            z-index: 1;
+        }
+        .element-cell {
+            border-color: var(--glow-color);
+            box-shadow: 0 0 15px -2px var(--glow-color), inset 0 0 10px var(--glow-color-inset, transparent);
+            background-color: rgba(10,10,20,0.5);
+        }
+        .element-symbol {
+            font-family: 'Inter', sans-serif;
+            font-weight: 800;
+            color: var(--glow-color);
+            text-shadow: 0 0 8px var(--glow-color), 0 0 16px var(--glow-color);
+        }
+        /* 稀有度颜色及特效 */
+        .rarity-NOR { --glow-color: #9ca3af; --glow-color-inset: #9ca3af33; }
+        .rarity-EXP { --glow-color: #3b82f6; --glow-color-inset: #3b82f633; }
+        .rarity-MAS { --glow-color: #a855f7; --glow-color-inset: #a855f733; }
+        .rarity-ULT { --glow-color: #f59e0b; --glow-color-inset: #f59e0b33; animation: ult-pulse 2s infinite; }
+        .rarity-WSE {
+            --glow-color: #e11d48;
+            animation: wse-rainbow 4s linear infinite, wse-border-pulse 2s infinite alternate;
+        }
+        
+        @keyframes ult-pulse {
+            0%, 100% { box-shadow: 0 0 20px 0px #f59e0b, inset 0 0 15px #f59e0b33; transform: scale(1); }
+            50% { box-shadow: 0 0 35px 8px #f59e0b, inset 0 0 15px #f59e0b33; transform: scale(1.02); }
+        }
+
+        @keyframes wse-border-pulse {
+            from { border-color: rgba(255,255,255,0.2); }
+            to { border-color: rgba(255,255,255,0.6); }
+        }
+
+        @keyframes wse-rainbow {
+            0%   { --glow-color: #ef4444; } 16%  { --glow-color: #f97316; } 33%  { --glow-color: #eab308; }
+            50%  { --glow-color: #22c55e; } 66%  { --glow-color: #3b82f6; } 83%  { --glow-color: #8b5cf6; }
+            100% { --glow-color: #ef4444; }
+        }
+        .rarity-WSE .element-symbol, .rarity-WSE .rarity-text {
+             animation: wse-rainbow-text 4s linear infinite;
+        }
+        @keyframes wse-rainbow-text {
+            0%   { color: #ef4444; text-shadow: 0 0 8px #ef4444; } 16%  { color: #f97316; text-shadow: 0 0 8px #f97316; }
+            33%  { color: #eab308; text-shadow: 0 0 8px #eab308; } 50%  { color: #22c55e; text-shadow: 0 0 8px #22c55e; }
+            66%  { color: #3b82f6; text-shadow: 0 0 8px #3b82f6; } 83%  { color: #8b5cf6; text-shadow: 0 0 8px #8b5cf6; }
+            100% { color: #ef4444; text-shadow: 0 0 8px #ef4444; }
+        }
+
+        /* 抽卡动画 */
+        #drawing-screen { display: flex; align-items: center; justify-content: center; perspective: 1500px; }
+        .card-reveal-container { width: 200px; height: 280px; position: relative; transform-style: preserve-3d; animation: flip-reveal 3s forwards; }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 1rem; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; }
+        .card-back { background: radial-gradient(circle, #4a044e, #1e1b4b); border: 2px solid #a855f7; box-shadow: 0 0 20px #a855f7; color: white; transform: rotateY(0deg); }
+        .card-front { background-color: #1f2937; transform: rotateY(180deg); }
+        @keyframes flip-reveal {
+            0% { transform: rotateY(0deg) scale(0.8); }
+            40% { transform: rotateY(1800deg) scale(1.2); }
+            60% { transform: scale(1); }
+            100% { transform: scale(1); }
+        }
+        .opening-burst { position: absolute; width: 400px; height: 400px; background: radial-gradient(circle, var(--glow-color), transparent 70%); border-radius: 50%; transform: scale(0); opacity: 0; animation: burst 1s 2.5s forwards; }
+        @keyframes burst { from { transform: scale(0); opacity: 0.8; } to { transform: scale(2); opacity: 0; } }
+
+        /* Carousel 样式 */
+        #results-carousel { position: relative; width: 100%; overflow: hidden; }
+        #results-track { display: flex; transition: transform 0.5s ease-in-out; }
+        .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(55, 65, 81, 0.8); color: white; border: 1px solid #4b5563; border-radius: 50%; width: 40px; height: 40px; z-index: 10; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .carousel-btn:hover { background-color: #4f46e5; }
+        #carousel-prev { left: 0px; }
+        #carousel-next { right: 0px; }
+        #carousel-dots { text-align: center; padding: 1rem 0; }
+        .dot { cursor: pointer; height: 12px; width: 12px; margin: 0 4px; background-color: #4b5563; border-radius: 50%; display: inline-block; transition: background-color 0.6s ease; }
+        .dot.active, .dot:hover { background-color: #818cf8; }
+
+        /* 历史记录样式 */
+         #history-screen { max-height: 80vh; overflow-y: auto; }
+        .history-item { background-color: rgba(55, 65, 81, 0.5); border-left: 4px solid var(--glow-color); }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <canvas id="matrix-canvas"></canvas>
+
+    <div id="app" class="app-container w-full max-w-md mx-auto p-6 md:p-8">
+
+        <!-- 开始界面 -->
+        <div id="start-screen" class="text-center">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold text-white mb-3">元素使召唤</h1>
+                <p class="text-gray-400 mb-8">聆听灵魂深处的共鸣，召唤属于你的元素使伙伴。</p>
+                <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                    <button id="single-draw-btn" class="btn btn-primary text-lg w-full sm:w-auto">
+                        单次召唤
+                    </button>
+                    <button id="ten-draw-btn" class="btn btn-secondary text-lg w-full sm:w-auto">
+                        十连召唤
+                    </button>
+                </div>
+                 <button id="history-btn" class="btn btn-muted text-gray-300 font-medium py-2 px-6 rounded-lg mt-8 text-sm">
+                    查看召唤记录
+                </button>
+            </div>
+        </div>
+
+        <!-- 抽卡动画界面 -->
+        <div id="drawing-screen" class="hidden text-center py-16">
+            <!-- 动画效果将由JS动态生成 -->
+        </div>
+
+
+        <!-- 结果展示界面 -->
+        <div id="result-screen" class="hidden text-center">
+            <div>
+                <p id="result-title" class="text-indigo-400 font-semibold mb-4 text-lg">召唤结果</p>
+
+                <div id="results-carousel" class="relative">
+                    <div id="results-track">
+                        <!-- 结果卡片将由JS动态生成 -->
+                    </div>
+                    <button id="carousel-prev" class="carousel-btn hidden">&lt;</button>
+                    <button id="carousel-next" class="carousel-btn hidden">&gt;</button>
+                </div>
+                <div id="carousel-dots" class="hidden"></div>
+                
+                <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mt-6">
+                    <button id="draw-again-btn" class="btn btn-primary text-lg w-full sm:w-auto">
+                        继续召唤
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 历史记录界面 -->
+        <div id="history-screen" class="hidden">
+            <h2 class="text-2xl font-bold text-center text-white mb-6">最近50次召唤记录</h2>
+            <ul id="history-list" class="space-y-2">
+                <!-- 历史记录将由JS动态生成 -->
+            </ul>
+            <div class="text-center mt-6">
+                <button id="history-back-btn" class="btn btn-muted text-white font-bold py-2 px-6">
+                    返回
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Matrix Background Effect (保持不变) ---
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const elementalWords = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', '氢', '氦', '锂', '铍', '硼', '碳', '氮', '氧', '氟', '氖', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'W', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'Ra', 'U', 'Rn', 'Og', 'Mz', 'Nu'];
+        const fontSize = 16;
+        const columns = Math.floor(canvas.width / fontSize);
+        const drops = Array(columns).fill(Infinity);
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgb(95, 230, 230)';
+            ctx.font = fontSize + 'px monospace';
+            for (let i = 0; i < drops.length; i++) {
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                const word = elementalWords[Math.floor(Math.random() * elementalWords.length)];
+                ctx.fillText(word, i * fontSize, drops[i] * fontSize);
+                drops[i]++;
+            }
+        }
+        let matrixInterval = setInterval(drawMatrix, 50);
+        window.addEventListener('resize', () => {
+             canvas.width = window.innerWidth;
+             canvas.height = window.innerHeight;
+             const newColumns = Math.floor(canvas.width / fontSize);
+             while(drops.length < newColumns) drops.push(Infinity);
+             while(drops.length > newColumns) drops.pop();
+        });
+
+        // --- Gacha Game Logic ---
+        const startScreen = document.getElementById('start-screen');
+        const drawingScreen = document.getElementById('drawing-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const historyScreen = document.getElementById('history-screen');
+
+        const singleDrawBtn = document.getElementById('single-draw-btn');
+        const tenDrawBtn = document.getElementById('ten-draw-btn');
+        const historyBtn = document.getElementById('history-btn');
+        const drawAgainBtn = document.getElementById('draw-again-btn');
+        const historyBackBtn = document.getElementById('history-back-btn');
+
+        let drawHistory = [];
+
+        const rarityTiers = {
+            'NOR': { stars: '★★★', name: 'NORMAL', class: 'rarity-NOR' },
+            'EXP': { stars: '★★★★', name: 'EXPERT', class: 'rarity-EXP' },
+            'MAS': { stars: '★★★★★', name: 'MASTER', class: 'rarity-MAS' },
+            'ULT': { stars: '★★★★★★', name: 'ULTIMA', class: 'rarity-ULT' },
+            'WSE': { stars: '∞', name: 'WORLD\'S END', class: 'rarity-WSE' }
+        };
+        
+        const characters = {
+            'Mz': { name: '未知访客', symbol: 'Mz', chineseName: '銆', atomicNumber: 126, rarity: 'WSE', electronegativity: '??', stableValence: '??', desc: '你是稳定岛上的未知变量，是系统之外的秩序颠覆者。' },
+            'Nu': { name: '纳塔尼尔·路易·卢西亚', symbol: 'Nu', chineseName: '㲴', atomicNumber: 0, rarity: 'WSE', electronegativity: 'N/A', stableValence: '0', desc: '你是悖于常理的“零号元素”，是纯粹的中子流，是足以撼动根基的变量。' },
+            'Rn': { name: '弗雷德里克·范克莱芬斯', symbol: 'Rn', chineseName: '氡', atomicNumber: 86, rarity: 'WSE', electronegativity: 2.2, stableValence: '0, +2', desc: '你是玩世不恭的“不死贵族”，将自己不断的生死循环视为一场荒诞戏剧。' },
+            'Og': { name: '尤里·奥加涅相', symbol: 'Og', chineseName: '鿫', atomicNumber: 118, rarity: 'WSE', electronegativity: 'N/A', stableValence: '0, +2, +4', desc: '你是科学的殉道者，你的存在与消亡，是对所有元素使最富悲剧性的警示。' },
+            'Tc': { name: '“拉赫” (L\'ART)', symbol: 'Tc', chineseName: '锝', atomicNumber: 43, rarity: 'WSE', electronegativity: 1.9, stableValence: '+4, +7', desc: '你是不稳定的、人造的艺术品，将自己的存在本身变成了一场行为艺术。' },
+
+            'F': { name: '帕弗尼丝·埃尔芮欧', symbol: 'F', chineseName: '氟', atomicNumber: 9, rarity: 'ULT', electronegativity: 3.98, stableValence: '-1', desc: '你是元素之王，活泼、骄傲、正义感十足，是你所在之处最耀眼的光。' },
+            'O': { name: '玛蒂尔德·加斯蒂诺', symbol: 'O', chineseName: '氧', atomicNumber: 8, rarity: 'ULT', electronegativity: 3.44, stableValence: '-2', desc: '你如氧气般无处不在，是生命与燃烧的女王，会抹除一切不稳定因素。' },
+            'Ne': { name: '欧琳·洛薇特', symbol: 'Ne', chineseName: '氖', atomicNumber: 10, rarity: 'ULT', electronegativity: 'N/A', stableValence: '0', desc: '你的内心纯真善良，拥有隔绝一切纷扰的绝对领域，是乱世中最宁静的港湾。' },
+            'C': { name: '伍', symbol: 'C', chineseName: '碳', atomicNumber: 6, rarity: 'ULT', electronegativity: 2.55, stableValence: '+4, -4', desc: '你是生命的基石，坚韧而又温柔。外表看似冷峻，内心却能包容一切。' },
+            'H': { name: '阿珂由丝·西莉丝缇欧', symbol: 'H', chineseName: '氢', atomicNumber: 1, rarity: 'ULT', electronegativity: 2.20, stableValence: '+1, -1', desc: '你是宇宙最基本的构成，善于适应和伪装，内心藏着足以改变一切的巨大能量。' },
+            'Tl': { name: '塔里亚·莫斯托夫·班纳', symbol: 'Tl', chineseName: '铊', atomicNumber: 81, rarity: 'ULT', electronegativity: 1.62, stableValence: '+1, +3', desc: '你是无声的投毒者，是“理性的恶”，为了达成目的可以不择手段。' },
+            'U': { name: '<0092>', symbol: 'U', chineseName: '铀', atomicNumber: 92, rarity: 'ULT', electronegativity: 1.38, stableValence: '+3, +4, +5, +6', desc: '你被迫背负了足以毁灭世界的重担，是终极的威慑武器，内心充满了挣扎与痛苦。' },
+            'He': { name: '竹廼门 天芥', symbol: 'He', chineseName: '氦', atomicNumber: 2, rarity: 'ULT', electronegativity: 'N/A', stableValence: '0', desc: '你是舞台上最闪耀的明星，也是幕后最冷静的观察者，拥有完美的防御和高贵的姿态。' },
+
+            'Cl': { name: '盐泽 汐空', symbol: 'Cl', chineseName: '氯', atomicNumber: 17, rarity: 'MAS', electronegativity: 3.16, stableValence: '-1, +1, +3, +5, +7', desc: '你是一位孤高的观测者，内心冰冷而又敏锐，寻找着需要被“净化”的污秽。' },
+            'Br': { name: '安托万·波德莱尔', symbol: 'Br', chineseName: '溴', atomicNumber: 35, rarity: 'MAS', electronegativity: 2.96, stableValence: '-1, +1, +3, +5, +7', desc: '你是忧郁的艺术家，也是致命的化学家，偏爱用优雅而致命的手段达成目的。' },
+            'N': { name: '柒', symbol: 'N', chineseName: '氮', atomicNumber: 7, rarity: 'MAS', electronegativity: 3.04, stableValence: '-3, +1, +2, +3, +4, +5', desc: '你的灵魂兼具创造与毁灭，既是生命滋养，也是烈性爆炸的根源。' },
+            'B': { name: '蓟炳岩', symbol: 'B', chineseName: '硼', atomicNumber: 5, rarity: 'MAS', electronegativity: 2.04, stableValence: '+3', desc: '你是天生的战略家，拥有超凡的理性和大局观，是团队最可靠的“大脑”。' },
+            'Ar': { name: '南门巽', symbol: 'Ar', chineseName: '氩', atomicNumber: 18, rarity: 'MAS', electronegativity: 'N/A', stableValence: '0', desc: '你习惯于隐藏在人群中，做一个安静的“小透明”，默默守护着珍视的一切。' },
+            'Kr': { name: '南门萃', symbol: 'Kr', chineseName: '氪', atomicNumber: 36, rarity: 'MAS', electronegativity: 3.00, stableValence: '0, +2', desc: '你拥有更强的隐匿能力，是能在信息洪流中悄然无声的潜行者。' },
+            'Co': { name: '森栗萤', symbol: 'Co', chineseName: '钴', atomicNumber: 27, rarity: 'MAS', electronegativity: 1.88, stableValence: '+2, +3', desc: '你兼具理性的智慧与艺术的感性，是连接不同领域的桥梁，是永不褪色的、深邃的蓝。' },
+            'Po': { name: '<0084>', symbol: 'Po', chineseName: '钋', atomicNumber: 84, rarity: 'MAS', electronegativity: 2.0, stableValence: '+2, +4, +6', desc: '你是剧毒的、强放射性的幽灵，是行走于阴影中收割生命的顶级刺客。' },
+            'Ra': { name: '阿纳斯塔兹·瓦内莎·居里', symbol: 'Ra', chineseName: '镭', atomicNumber: 88, rarity: 'MAS', electronegativity: 0.9, stableValence: '+2', desc: '你背负着荣耀与诅咒，致力于将危险的放射性能量用于崇高事业。' },
+
+            'Si': { name: '“智慧”', symbol: 'Si', chineseName: '硅', atomicNumber: 14, rarity: 'EXP', electronegativity: 1.90, stableValence: '+4, -4', desc: '你是信息时代的基石，是纯粹逻辑的化身，冰冷、高效、无所不知的“管理者”。' },
+            'P': { name: '炊雪粼', symbol: 'P', chineseName: '磷', atomicNumber: 15, rarity: 'EXP', electronegativity: 2.19, stableValence: '-3, +3, +5', desc: '你是生命之火，也是剧毒之源，掌握着创造与毁灭的双重力量。' },
+            'Au': { name: '于尔根·戈尔德斯坦', symbol: 'Au', chineseName: '金', atomicNumber: 79, rarity: 'EXP', electronegativity: 2.54, stableValence: '+1, +3', desc: '你是“资本”的具象化，无比耀眼，却又如金般稳定，只为自身利益而行动。' },
+            'Te': { name: '黛比·奥芬·特里丝卓', symbol: 'Te', chineseName: '碲', atomicNumber: 52, rarity: 'EXP', electronegativity: 2.1, stableValence: '-2, +4, +6', desc: '你忠诚、执着，是你所认可之人的最强之盾，可以毫不犹豫地释放全部力量。' },
+            'Cr': { name: '燕柠', symbol: 'Cr', chineseName: '铬', atomicNumber: 24, rarity: 'EXP', electronegativity: 1.66, stableValence: '+2, +3, +6', desc: '你坚韧而又多彩，沉浸在自己的世界中，对一切未知都抱有强烈的好奇心。' },
+            'Ga': { name: '伊西多尔·柯尔克拉夫', symbol: 'Ga', chineseName: '镓', atomicNumber: 31, rarity: 'EXP', electronegativity: 1.81, stableValence: '+3', desc: '你拥有“液态金属”般的柔韧与渗透力，敢于从内部瓦解最坚固的壁垒。' },
+            'I': { name: '维奥莉多·赛薇亚拉', symbol: 'I', chineseName: '碘', atomicNumber: 53, rarity: 'EXP', electronegativity: 2.66, stableValence: '-1, +1, +3, +5, +7', desc: '你如碘升华的紫烟，神秘而又难以捉摸，是优秀的特工。' },
+            'Xe': { name: '卡斯帕·冯·阿斯坎尼', symbol: 'Xe', chineseName: '氙', atomicNumber: 54, rarity: 'EXP', electronegativity: 2.6, stableValence: '0, +2, +4, +6', desc: '你是矛盾的“回避型”完美主义者，永远在光明与黑暗的边界挣扎。' },
+            'Ni': { name: '筑泠菀', symbol: 'Ni', chineseName: '镍', atomicNumber: 28, rarity: 'EXP', electronegativity: 1.91, stableValence: '+2, +3', desc: '你坚韧耐腐，是热情善良的伙伴，能为同伴抵御一切侵蚀的、最可靠的合金。' },
+            'As': { name: '<0033>', symbol: 'As', chineseName: '砷', atomicNumber: 33, rarity: 'EXP', electronegativity: 2.18, stableValence: '-3, +3, +5', desc: '你是古老的毒药，也是尖端的科技材料，你的性格兼具智慧与危险。' },
+            'In': { name: '<0049>', symbol: 'In', chineseName: '铟', atomicNumber: 49, rarity: 'EXP', electronegativity: 1.78, stableValence: '+1, +3', desc: '你柔软、可塑，能让信息“透明”地传递，是优秀的信息传递者和分析师。' },
+            'Bi': { name: '<0083>', symbol: 'Bi', chineseName: '铋', atomicNumber: 83, rarity: 'EXP', electronegativity: 2.02, stableValence: '+3, +5', desc: '你无毒，却拥有美丽的虹彩，是团队中的“治疗者”与“美化者”，是铅元素的天然克星。' },
+
+            'Be': { name: '南宫蔚璇', symbol: 'Be', chineseName: '铍', atomicNumber: 4, rarity: 'NOR', electronegativity: 1.57, stableValence: '+2', desc: '你是美丽与致命的结合体，兼具艺术家的感性与科学家的冷酷。' },
+            'S': { name: '汤聿晞', symbol: 'S', chineseName: '硫', atomicNumber: 16, rarity: 'NOR', electronegativity: 2.58, stableValence: '-2, +2, +4, +6', desc: '你富有才华，争强好胜，有一定程度的自我中心，但也会燃烧自己，照亮同伴。' },
+            'Ir': { name: '塔蒂·西尼萨玛尔', symbol: 'Ir', chineseName: '铱', atomicNumber: 77, rarity: 'NOR', electronegativity: 2.20, stableValence: '+2, +3, +4, +6', desc: '你拥有双重的灵魂，一面绚丽纯洁，另一面是极致的凶狠与破坏力。' },
+            'Ti': { name: '金历研', symbol: 'Ti', chineseName: '钛', atomicNumber: 22, rarity: 'NOR', electronegativity: 1.54, stableValence: '+2, +3, +4', desc: '你是在苦难中被反复锻打的幸存者，沉默、坚韧、无比务实。' },
+            'Pb': { name: '苻榭', symbol: 'Pb', chineseName: '铅', atomicNumber: 82, rarity: 'NOR', electronegativity: 2.33, stableValence: '+2, +4', desc: '你沉重、阴郁、歹毒，享受折磨弱者带来的快感，是秩序的破坏者。' },
+            'Ta': { name: '凯撒尔·塔拉兹', symbol: 'Ta', chineseName: '钽', atomicNumber: 73, rarity: 'NOR', electronegativity: 1.5, stableValence: '+5', desc: '你如金属钽般坚不可摧，内心深处保留着军人般的坚韧与强大。' },
+            'V': { name: '阿尔西亚·埃尔芮欧', symbol: 'V', chineseName: '钒', atomicNumber: 23, rarity: 'NOR', electronegativity: 1.63, stableValence: '+2, +3, +4, +5', desc: '你是多变的催化剂，专业、冷静、富有智慧和责任感，默默地推动事态发展。' },
+            'Nb': { name: '尼拉·汤恩', symbol: 'Nb', chineseName: '铌', atomicNumber: 41, rarity: 'NOR', electronegativity: 1.6, stableValence: '+3, +5', desc: '你连接着过去与未来，温和、友善，是完美的协作者与不可或缺的“纽带”。' },
+            'Li': { name: '鲜宇珩', symbol: 'Li', chineseName: '锂', atomicNumber: 3, rarity: 'NOR', electronegativity: 0.98, stableValence: '+1', desc: '你的内心燃烧着最原始的能量，是团队中最具爆发力的先锋。' },
+            'Na': { name: '公冶延', symbol: 'Na', chineseName: '钠', atomicNumber: 11, rarity: 'NOR', electronegativity: 0.93, stableValence: '+1', desc: '你如钠般不可或缺，是学生们的“盐”，温和、有耐心，是循循善诱的师长。' },
+            'Mg': { name: '白翎枫', symbol: 'Mg', chineseName: '镁', atomicNumber: 12, rarity: 'NOR', electronegativity: 1.31, stableValence: '+2', desc: '你燃烧时发出耀眼的白光，象征着纯粹的正义，会毫不犹豫地为保护弱小而战。' },
+            'Al': { name: '阿利斯泰尔·克罗科', symbol: 'Al', chineseName: '铝', atomicNumber: 13, rarity: 'NOR', electronegativity: 1.61, stableValence: '+3', desc: '你善于伪装，精于算计，为了自身利益可以背叛信任，是典型的精致利己主义者。' },
+            'Fe': { name: '费羿忻', symbol: 'Fe', chineseName: '铁', atomicNumber: 26, rarity: 'NOR', electronegativity: 1.83, stableValence: '+2, +3', desc: '你是工业的脊梁，沉稳、务实，相信行动胜于空谈，会用双手构筑最坚固的守护。' },
+            'Sn': { name: '胡安·坎普', symbol: 'Sn', chineseName: '锡', atomicNumber: 50, rarity: 'NOR', electronegativity: 1.96, stableValence: '+2, +4', desc: '你经验丰富，饱经沧桑，是团队中如同“老爹”般的存在。' },
+            'Ge': { name: '<0032>', symbol: 'Ge', chineseName: '锗', atomicNumber: 32, rarity: 'NOR', electronegativity: 2.01, stableValence: '+2, +4', desc: '你是信息时代的基石，是连接现实与虚拟的桥梁，一位天生的工程师或科学家。' },
+            'Sb': { name: '<0051>', 'symbol': 'Sb', 'chineseName': '锑', 'atomicNumber': 51, rarity: 'NOR', electronegativity: 2.05, stableValence: '-3, +3, +5', desc: '你是典型的半金属，性格充满矛盾，时而坚硬，时而脆弱，让人难以捉摸。' },
+            'Mo': { name: '<0042>', symbol: 'Mo', chineseName: '钼', atomicNumber: 42, rarity: 'NOR', electronegativity: 2.16, stableValence: '+2, +3, +4, +5, +6', desc: '你是生命必需的微量元素，也是高强度合金的关键，是多才多艺的“多面手”。' },
+        };
+        
+        const allCharacters = Object.values(characters);
+
+        // 抽卡概率设定
+        const gachaRates = [
+            { rarity: 'NOR', rate: 0.50 },   // 50%
+            { rarity: 'EXP', rate: 0.375 },   // 37.5%
+            { rarity: 'MAS', rate: 0.10 },   // 10%
+            { rarity: 'ULT', rate: 0.02 },  // 2.0%
+            { rarity: 'WSE', rate: 0.005 }   // 0.5%
+        ];
+
+        // 切换视图
+        function switchView(viewId) {
+            const screens = {
+                'start-screen': startScreen,
+                'drawing-screen': drawingScreen,
+                'result-screen': resultScreen,
+                'history-screen': historyScreen
+            };
+            for (const id in screens) {
+                if (screens[id]) screens[id].classList.add('hidden');
+            }
+            if (screens[viewId]) screens[viewId].classList.remove('hidden');
+            if (viewId !== 'drawing-screen') {
+                drawingScreen.innerHTML = '';
+            }
+        }
+
+        // 核心抽卡逻辑
+        function performDraw(count) {
+            switchView('drawing-screen');
+            
+            let hasHighRarity = false;
+            const drawnCards = [];
+
+            for (let i = 0; i < count; i++) {
+                let card;
+                if (count === 10 && i === 9 && !hasHighRarity) {
+                    const possibleCards = allCharacters.filter(c => c.rarity === 'EXP');
+                    card = possibleCards[Math.floor(Math.random() * possibleCards.length)];
+                } else {
+                    const rand = Math.random();
+                    let cumulativeRate = 0;
+                    let chosenRarity = 'NOR';
+                    for (const tier of gachaRates) {
+                        cumulativeRate += tier.rate;
+                        if (rand < cumulativeRate) {
+                            chosenRarity = tier.rarity;
+                            break;
+                        }
+                    }
+                    card = getCardByRarity(chosenRarity);
+                }
+                
+                if (card.rarity !== 'NOR') {
+                    hasHighRarity = true;
+                }
+                drawnCards.push(card);
+            }
+
+            drawHistory.unshift(...drawnCards);
+            if (drawHistory.length > 50) {
+                drawHistory.length = 50;
+            }
+
+            playDrawAnimation(drawnCards);
+        }
+
+        function getCardByRarity(rarity) {
+            const filtered = allCharacters.filter(c => c.rarity === rarity);
+            if (filtered.length === 0) {
+                return getCardByRarity('NOR');
+            }
+            return filtered[Math.floor(Math.random() * filtered.length)];
+        }
+        
+        function playDrawAnimation(cards) {
+            const firstCard = cards[0];
+            const rarityInfo = rarityTiers[firstCard.rarity];
+            
+            const animationHTML = `
+                <div class="relative flex flex-col items-center justify-center">
+                     <p class="text-2xl font-bold text-white mb-8 animate-pulse">正在召唤...</p>
+                     <div class="card-reveal-container">
+                        <div class="card-face card-back">⌬</div>
+                        <div class="card-face card-front"></div>
+                     </div>
+                     <div class="opening-burst" style="--glow-color: ${rarityTiers[firstCard.rarity] ? `var(--glow-color)` : '#ffffff'};"></div>
+                </div>
+            `;
+            drawingScreen.innerHTML = animationHTML;
+            drawingScreen.querySelector('.opening-burst').classList.add(rarityInfo.class);
+
+            setTimeout(() => {
+                displayResult(cards);
+            }, 3200);
+        }
+
+        function displayResult(drawnCards) {
+            switchView('result-screen');
+            const track = document.getElementById('results-track');
+            const dotsContainer = document.getElementById('carousel-dots');
+            const prevBtn = document.getElementById('carousel-prev');
+            const nextBtn = document.getElementById('carousel-next');
+
+            track.innerHTML = '';
+            dotsContainer.innerHTML = '';
+            track.style.transform = 'translateX(0)';
+            currentSlide = 0;
+
+            document.getElementById('result-title').textContent = drawnCards.length > 1 ? `十连召唤结果` : `召唤结果`;
+
+            drawnCards.forEach((char, index) => {
+                const rarityInfo = rarityTiers[char.rarity];
+                const cardHTML = `
+                    <div class="result-card-wrapper">
+                        <div class="result-card-container p-5 my-4 max-w-sm mx-auto flex flex-col items-center ${rarityInfo.class}">
+                           <div class="w-full">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h3 class="text-xl font-bold text-white">${char.name}</h3>
+                                        <p class="text-sm text-gray-400">${char.symbol} - ${char.chineseName}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-bold text-lg rarity-text">${rarityInfo.stars}</p>
+                                        <p class="text-xs text-gray-400">${rarityInfo.name}</p>
+                                    </div>
+                                </div>
+                                <div class="relative w-40 h-40 my-4 mx-auto border-2 rounded-lg flex items-center justify-center bg-gray-900/50 element-cell">
+                                    <span class="absolute top-2 left-3 text-xl font-bold text-gray-400">${char.atomicNumber}</span>
+                                    <p class="text-7xl element-symbol">${char.symbol}</p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-4">
+                                    <div class="text-left"><span class="font-semibold text-gray-400">电负性:</span> <span class="text-white font-mono">${char.electronegativity}</span></div>
+                                    <div class="text-right"><span class="font-semibold text-gray-400">稳定化合价:</span> <span class="text-white font-mono">${char.stableValence}</span></div>
+                                </div>
+                                <p class="text-xs text-gray-300 text-center h-16 overflow-auto">${char.desc}</p>
+                           </div>
+                        </div>
+                    </div>
+                `;
+                track.insertAdjacentHTML('beforeend', cardHTML);
+
+                if (drawnCards.length > 1) {
+                    const dot = document.createElement('span');
+                    dot.classList.add('dot');
+                    dot.addEventListener('click', () => {
+                        currentSlide = index;
+                        updateCarousel();
+                    });
+                    dotsContainer.appendChild(dot);
+                }
+            });
+
+            if (drawnCards.length > 1) {
+                dotsContainer.classList.remove('hidden');
+                prevBtn.classList.remove('hidden');
+                nextBtn.classList.remove('hidden');
+                setupCarousel();
+            } else {
+                dotsContainer.classList.add('hidden');
+                prevBtn.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+            }
+        }
+
+        function showHistory() {
+            switchView('history-screen');
+            const historyList = document.getElementById('history-list');
+            historyList.innerHTML = '';
+
+            if (drawHistory.length === 0) {
+                historyList.innerHTML = '<li class="text-center text-gray-400">暂无召唤记录</li>';
+                return;
+            }
+
+            drawHistory.forEach(char => {
+                const rarityInfo = rarityTiers[char.rarity];
+                const itemHTML = `
+                    <li class="history-item p-3 rounded-md flex justify-between items-center ${rarityInfo.class}">
+                        <div class="flex items-center">
+                            <span class="font-bold text-lg w-28 flex-shrink-0 text-left rarity-text">${rarityInfo.stars}</span>
+                            <span class="text-white font-semibold">${char.name}</span>
+                        </div>
+                        <span class="text-gray-400 text-sm">${char.symbol} - ${char.chineseName}</span>
+                    </li>
+                `;
+                historyList.insertAdjacentHTML('beforeend', itemHTML);
+            });
+        }
+        
+        let currentSlide = 0;
+        let slides = [];
+        let dots = [];
+
+        function setupCarousel() {
+            const track = document.getElementById('results-track');
+            slides = track.querySelectorAll('.result-card-wrapper');
+            dots = document.getElementById('carousel-dots').querySelectorAll('.dot');
+            currentSlide = 0;
+            updateCarousel();
+        }
+
+        function updateCarousel() {
+            const track = document.getElementById('results-track');
+            track.style.transform = `translateX(-${currentSlide * 100}%)`;
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+            const prevBtn = document.getElementById('carousel-prev');
+            const nextBtn = document.getElementById('carousel-next');
+            prevBtn.disabled = currentSlide === 0;
+            nextBtn.disabled = currentSlide === slides.length - 1;
+            prevBtn.classList.toggle('opacity-50', prevBtn.disabled);
+            nextBtn.classList.toggle('opacity-50', nextBtn.disabled);
+        }
+
+        document.getElementById('carousel-next').addEventListener('click', () => {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                updateCarousel();
+            }
+        });
+
+        document.getElementById('carousel-prev').addEventListener('click', () => {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateCarousel();
+            }
+        });
+
+        singleDrawBtn.addEventListener('click', () => performDraw(1));
+        tenDrawBtn.addEventListener('click', () => performDraw(10));
+        historyBtn.addEventListener('click', showHistory);
+        drawAgainBtn.addEventListener('click', () => switchView('start-screen'));
+        historyBackBtn.addEventListener('click', () => switchView('start-screen'));
+
+    </script>
+</body>
+</html>
