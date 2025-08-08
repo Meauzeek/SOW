@@ -167,6 +167,7 @@
         <button id="toggle-panel-btn" class="toggle-button">&raquo;</button>
         <div class="legend-panel">
             <h2>《随星录》时局图</h2>
+            <h3>不言而喻·一目了然</h3>
             <div class="legend-section">
                 <h3>图例 (Markers)</h3>
                 <div id="marker-legend"></div>
@@ -196,7 +197,7 @@
             attribution: 'Tiles &copy; Esri &mdash; Source: Esri & others'
         }).addTo(map);
 
-        // 2. 定义元素使数据 (V8 - 最终修正)
+        // 2. 定义元素使数据 (V9 - 最终修正)
         const elementUsers = [
              // 关键人物
             { name: '埃德·乔治', element: 'Ed', type: 'special', country: '中国', coords: [31.7, 112.25], faction: '观察者', color: '#FBBF24', details: '核心观察者，作者本人。原籍湖北宜城。' },
@@ -255,6 +256,8 @@
             // 非洲
             { name: '尼拉·汤恩', element: 'Nb', type: 'current', country: '埃塞俄比亚/南非', coords: [9.03, 38.74], faction: '独立', color: '#6EE7B7', details: '铌(Nb)元素使。原籍南非，后迁居埃塞俄比亚。' },
             { name: '阿利斯泰尔·克罗科', element: 'Al', type: 'current', country: '南非', coords: [-33.92, 18.42], faction: 'LUACL', color: '#94A3B8', details: '铝(Al)元素使。开普敦人。' },
+            // 哈萨克斯坦
+            { name: '凯撒尔·塔拉兹', element: 'Ta', type: 'current', country: '哈萨克斯坦', coords: [51.17, 71.45], faction: '威德尔联合工业', color: '#718096', details: '钽(Ta)元素使，内心保留着军人般的坚韧。现居阿斯塔纳。' },
              // Aëterna
             { name: '伍（伍昙栖）', element: 'C', type: 'current', country: 'Aëterna', coords: [22.54, 114.05], faction: '冰原同盟会', color: '#2D3748', details: '碳(C)元素使。来自爱伊忒拿，现居深圳。' },
             { name: '柒（柒涟舞）', element: 'N', type: 'current', country: 'Aëterna', coords: [22.55, 114.06], faction: '独立', color: '#A3BFFA', details: '氮(N)元素使。来自爱伊忒拿，现居深圳。' },
