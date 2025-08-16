@@ -3,306 +3,578 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>“陵墓”子世界三维坐标图</title>
-    <!-- 引入Tailwind CSS 用于页面美化 -->
+    <title>“陵墓”子世界浏览器</title>
+    <!-- 引入Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入Inter和Roboto Mono字体 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- 引入Plotly.js (用于2D坐标图) -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
     <style>
         body {
             font-family: 'Inter', 'Microsoft YaHei', sans-serif;
             overflow: hidden;
-            background-color: #f3f4f6; /* gray-100 */
+            transition: background-color 0.5s ease, color 0.5s ease;
         }
-        #tooltip {
+        /* --- Light Mode (Default) --- */
+        body { background-color: #ffffff; color: #1f2937; }
+        .control-panel, .legend-panel, .grid-card { background-color: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(209, 213, 219, 0.5); }
+        .header-text { color: #111827; }
+        .subheader-text { color: #4b5563; }
+        .tooltip-card { background-color: rgba(249, 250, 251, 0.75); border: 1px solid transparent; border-image: linear-gradient(to bottom right, #a5b4fc, #34d399) 1; color: #1f2937; }
+        .text-main { color: #1f2937; }
+        .text-subtle { color: #6b7280; }
+        .border-divider { border-color: #e5e7eb; }
+        
+        /* --- Dark Mode --- */
+        body.dark { background-color: #030712; color: #d1d5db; }
+        .dark .control-panel, .dark .legend-panel, .dark .grid-card { background-color: rgba(17, 24, 39, 0.7); border: 1px solid rgba(55, 65, 81, 0.5); }
+        .dark .header-text { color: #f9fafb; }
+        .dark .subheader-text { color: #9ca3af; }
+        .dark .tooltip-card { background-color: rgba(3, 7, 18, 0.75); border-image: linear-gradient(to bottom right, #6366f1, #10b981) 1; color: #d1d5db; }
+        .dark .grid-card:hover { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        .dark .text-main { color: #f9fafb; }
+        .dark .text-subtle { color: #9ca3af; }
+        .dark .border-divider { border-color: #374151; }
+
+        /* --- Shared Styles --- */
+        #tooltip { position: absolute; display: none; width: 320px; border-radius: 16px; font-size: 14px; pointer-events: none; white-space: normal; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 100; transition: opacity 0.2s ease-in-out; overflow: hidden; }
+        .coord-label, .livability-text { font-family: 'Roboto Mono', monospace; font-weight: 700; }
+        .tooltip-image-container { height: 140px; width: 100%; overflow: hidden; position: relative; background-color: #e5e7eb; }
+        .tooltip-image { width: 100%; height: 100%; object-fit: cover; }
+        #view-2d-grid, #view-2d-plot-wrapper { overflow-y: auto; height: 100vh; padding-top: 150px; padding-bottom: 50px; box-sizing: border-box; }
+        .grid-card { transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out; }
+        .grid-card:hover { transform: translateY(-5px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+        .glitch-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(74, 222, 128, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px); background-size: 5px 5px; opacity: 1; animation: glitch-scan 5s linear infinite alternate; pointer-events: none; }
+        @keyframes glitch-scan { 0% { background-position: 0 0; } 50% { background-position: 10px 10px; } 100% { background-position: 0 0; } }
+        #starfield-canvas-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; transition: opacity 0.5s ease; opacity: 0; }
+        
+        /* Custom Select Styling */
+        .select-wrapper {
+            position: relative;
+            width: 130px;
+        }
+        .select-wrapper::after {
+            content: '▼';
+            font-size: 0.625rem; /* 10px */
+            color: #6b7280; /* gray-500 */
             position: absolute;
-            display: none;
-            width: 320px;
-            padding: 1.25rem; /* 20px */
-            background-color: rgba(249, 250, 251, 0.7); /* gray-50/70 */
-            border: 1px solid transparent;
-            border-radius: 16px;
-            color: #1f2937; /* gray-800 */
-            font-size: 14px;
+            right: 0.75rem; /* 12px */
+            top: 50%;
+            transform: translateY(-50%);
             pointer-events: none;
-            white-space: normal;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            z-index: 100;
-            transition: opacity 0.2s ease-in-out;
-            border-image: linear-gradient(to bottom right, #a5b4fc, #34d399) 1;
         }
-        .coord-label {
-            font-family: 'Roboto Mono', monospace;
-            font-weight: 700;
+        .dark .select-wrapper::after {
+            color: #9ca3af; /* dark:gray-400 */
         }
-        .livability-text {
-            font-family: 'Roboto Mono', monospace;
-            font-weight: 700;
+        .plot-select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 100%;
+            padding: 0.25rem 2rem 0.25rem 0.5rem; /* py-1 pl-2 pr-8 */
+            border-radius: 0.375rem; /* rounded-md */
+            border-width: 1px;
+            background-color: #ffffff; /* bg-white */
+            color: #1f2937; /* text-main */
+            border-color: #d1d5db; /* border-gray-300 */
         }
+        .plot-select:focus {
+            outline: none;
+            --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+            --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+            box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+            --tw-ring-color: rgb(59 130 246 / 0.5);
+        }
+        .dark .plot-select {
+            background-color: #1f2937; /* dark:bg-gray-800 */
+            border-color: #4b5563; /* dark:border-gray-600 */
+            color: #f9fafb; /* dark:text-main */
+        }
+        .plot-select option {
+             background-color: #ffffff;
+             color: #1f2937;
+        }
+        .dark .plot-select option {
+            background-color: #1f2937;
+            color: #f9fafb;
+        }
+
     </style>
 </head>
-<body class="text-gray-800">
+<body>
+    <!-- 动态星空背景 (仅在暗黑模式下显示) -->
+    <canvas id="starfield-canvas-bg"></canvas>
 
     <div id="header" class="absolute top-0 left-0 w-full p-4 md:p-6 text-center pointer-events-none z-10 transition-opacity duration-300">
         <header>
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">“陵墓” (The Mausoleum)</h1>
-            <p class="text-lg md:text-xl text-gray-500 mt-1">子世界三维分布全息图</p>
+            <h1 class="text-3xl md:text-4xl font-bold header-text">“陵墓” (The Mausoleum)</h1>
+            <p class="text-lg md:text-xl subheader-text mt-1">子世界浏览器</p>
         </header>
     </div>
     
     <!-- UI 控制面板 -->
-    <div class="absolute top-4 left-4 bg-white/80 backdrop-blur-sm p-4 rounded-lg shadow-md z-20">
-        <h3 class="font-bold mb-2 text-gray-700">显示选项</h3>
-        <div class="space-y-2">
-            <div class="flex items-center">
-                <input type="checkbox" id="toggle-title" class="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500" checked>
-                <label for="toggle-title" class="ml-2 text-sm text-gray-600">显示标题</label>
+    <div class="absolute top-4 left-4 control-panel p-4 rounded-lg shadow-md z-20 transition-transform duration-300 ease-in-out">
+        <button id="panel-toggle-btn" class="absolute -right-6 top-1/2 -translate-y-1/2 bg-inherit border-inherit border-l-0 rounded-r-md p-1 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200">
+            <svg id="panel-arrow" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        <div id="panel-content">
+            <h3 class="font-bold mb-2 text-gray-700 dark:text-gray-300">视图模式</h3>
+            <div class="flex items-center space-x-2 mb-2">
+                <input type="radio" id="view-3d-radio" name="view-mode" value="3d" class="h-4 w-4 text-sky-600 focus:ring-sky-500" checked><label for="view-3d-radio" class="text-sm text-gray-600 dark:text-gray-400">3D星图</label>
+                <input type="radio" id="view-2d-grid-radio" name="view-mode" value="2d-grid" class="h-4 w-4 text-sky-600 focus:ring-sky-500"><label for="view-2d-grid-radio" class="text-sm text-gray-600 dark:text-gray-400">2D资料库</label>
+                <input type="radio" id="view-2d-plot-radio" name="view-mode" value="2d-plot" class="h-4 w-4 text-sky-600 focus:ring-sky-500"><label for="view-2d-plot-radio" class="text-sm text-gray-600 dark:text-gray-400">2D坐标图</label>
             </div>
-            <div class="flex items-center">
-                <input type="checkbox" id="toggle-quadrants" class="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500" checked>
-                <label for="toggle-quadrants" class="ml-2 text-sm text-gray-600">显示象限平面</label>
+            <div id="controls-3d">
+                <h3 class="font-bold mb-2 text-gray-700 dark:text-gray-300 border-t border-divider pt-2 mt-2">显示选项</h3>
+                <div class="space-y-2">
+                    <div class="flex items-center"><input type="checkbox" id="toggle-title" class="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500" checked><label for="toggle-title" class="ml-2 text-sm text-gray-600 dark:text-gray-400">显示标题</label></div>
+                    <div class="flex items-center"><input type="checkbox" id="toggle-quadrants" class="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500" checked><label for="toggle-quadrants" class="ml-2 text-sm text-gray-600 dark:text-gray-400">显示象限平面</label></div>
+                    <div class="flex items-center"><input type="checkbox" id="toggle-legend" class="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500" checked><label for="toggle-legend" class="ml-2 text-sm text-gray-600 dark:text-gray-400">显示图例</label></div>
+                </div>
+            </div>
+            <div id="controls-2d-plot" class="hidden">
+                 <h3 class="font-bold mb-2 text-gray-700 dark:text-gray-300 border-t border-divider pt-2 mt-2">坐标轴定义 (2D)</h3>
+                 <div class="space-y-2 text-sm">
+                    <div class="flex justify-between items-center">
+                        <label for="x-axis-select" class="text-gray-600 dark:text-gray-400">横轴 (X):</label>
+                        <div class="select-wrapper">
+                            <select id="x-axis-select" class="plot-select"></select>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <label for="y-axis-select" class="text-gray-600 dark:text-gray-400">纵轴 (Y):</label>
+                        <div class="select-wrapper">
+                            <select id="y-axis-select" class="plot-select"></select>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <label for="color-select" class="text-gray-600 dark:text-gray-400">色阶 (Color):</label>
+                        <div class="select-wrapper">
+                             <select id="color-select" class="plot-select"></select>
+                        </div>
+                    </div>
+                 </div>
+            </div>
+             <div class="border-t border-divider pt-2 mt-2">
+                <h3 class="font-bold mb-2 text-gray-700 dark:text-gray-300">主题</h3>
+                 <div class="flex items-center"><input type="checkbox" id="toggle-theme" class="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"><label for="toggle-theme" class="ml-2 text-sm text-gray-600 dark:text-gray-400">暗黑模式</label></div>
             </div>
         </div>
     </div>
     
     <!-- 宜居度色阶条 -->
-    <div id="legend" class="absolute bottom-4 right-4 p-3 bg-white/80 backdrop-blur-sm rounded-lg shadow-md z-20 flex flex-col items-center pointer-events-none">
-        <div class="w-4 h-48 rounded" style="background: linear-gradient(to top, #ff0000, #c000c0, #0000ff, #008080, #00ff00, #adff2f);"></div>
-        <div class="flex justify-between w-full mt-1 text-xs text-gray-500 flex-col h-48 absolute top-3 right-8">
-             <span class="self-end">1.0　</span>
-             <span class="self-end">0.0　</span>
+    <div id="legend" class="absolute bottom-4 right-4 p-3 legend-panel flex flex-col items-center pointer-events-none transition-opacity duration-300">
+        <div class="w-4 h-48 rounded" style="background: linear-gradient(to top, #ff0000, #c000c0, #0000ff, #008080, #15ab15, #adff2f);"></div>
+        <div class="flex justify-between w-full mt-1 text-xs text-subtle flex-col h-48 absolute top-3 right-8">
+             <span class="self-end">1.0</span><span class="self-end">0.0</span>
         </div>
-        <div class="mt-2 text-sm font-bold text-gray-700" title="宜居度 = (现实强度 * 个体自由度) * (1 - |无序度 - 0.3|)">宜居度</div>
+        <div class="mt-2 text-sm font-bold text-gray-700 dark:text-gray-300" title="宜居度 = ((强度*0.6)+(自由度*0.4)) * (1 - |无序度 - 0.3|)">宜居度</div>
     </div>
 
+    <!-- 视图容器 -->
+    <div id="view-3d"><div id="container-3d"></div><div id="tooltip" class="tooltip-card"></div></div>
+    <div id="view-2d-grid" class="hidden"><div class="container mx-auto px-4"><div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div></div></div>
+    <div id="view-2d-plot-wrapper" class="hidden flex items-center justify-center"><div id="plot-2d-container" class="w-[90vw] h-[90vh] max-w-[1200px] max-h-[1200px] control-panel p-4 rounded-lg"></div></div>
 
-    <!-- three.js 渲染的容器 -->
-    <div id="container"></div>
-    
-    <!-- 悬停信息提示框 -->
-    <div id="tooltip"></div>
-
-    <!-- 引入three.js核心库和OrbitControls控制器 -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
-            }
-        }
-    </script>
-
+    <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/" } }</script>
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
-        // --- 1. 初始化 ---
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf3f4f6); // gray-100
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('container').appendChild(renderer.domElement);
-        
-        const labelRenderer = new CSS2DRenderer();
-        labelRenderer.setSize(window.innerWidth, window.innerHeight);
-        labelRenderer.domElement.style.position = 'absolute';
-        labelRenderer.domElement.style.top = '0px';
-        labelRenderer.domElement.style.pointerEvents = 'none';
-        document.getElementById('container').appendChild(labelRenderer.domElement);
+        // --- 全局变量 ---
+        let scene, camera, renderer, labelRenderer, controls, objects = [], intersectedObject = null, lastMouseEvent = null, starfield, starfieldCanvas, starfieldCtx, stars = [];
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const tooltip = document.getElementById('tooltip');
+        const CUBE_SIZE = 10;
+        const axisColors = { x: '#4169E1', y: '#34C759', z: '#8A2BE2' };
 
-        // --- 2. 数据定义 ---
+        // --- 数据定义 ---
         const mausoleumData = [
-            { name_cn: '地球', name_en: 'Earth', x: 0.9855, y: 0.8234, z: 0.3588, desc: '基准世界，充满可能性与缺陷' },
-            { name_cn: '奥比奎亚', name_en: 'Orbiquia', x: 0.9780, y: 0.7231, z: 0.4132, desc: '与地球同级的“双胞胎”世界，科技更发达' },
-            { name_cn: '光明境', name_en: 'Lucidia', x: 0.9134, y: 0.9876, z: 0.2543, desc: '后匮乏时代的乌托邦，专注于自我实现' },
-            { name_cn: '样板间', name_en: 'The Showroom', x: 1.0000, y: 1.0000, z: 0.1000, desc: '“先驱”文明从未实现的、绝对完美的理想社会蓝图' },
-            { name_cn: '织梦海', name_en: 'Oneiros', x: 0.1234, y: 0.9567, z: 0.8976, desc: '纯意识构成的梦境世界，想象力是物理法则' },
-            { name_cn: '阿斯帕拉戈', name_en: 'Asparague', x: 0.7543, y: 0.6112, z: 0.5211, desc: '拥有多种智慧种族的剑与魔法式异世界' },
-            { name_cn: '共治政体', name_en: 'Synarchy', x: 0.5512, y: 0.5000, z: 0.4867, desc: '两种智慧生命强制共生的平衡社会' },
-            { name_cn: '拟象界', name_en: 'Simulacra', x: 0.2556, y: 0.4533, z: 0.3229, desc: '由活的文具和工具构成的奇异文明' },
-            { name_cn: '爱伊忒拿', name_en: 'Aëterna', x: 0.8505, y: 0.2077, z: 0.0533, desc: '由超级AI管理的、追求绝对秩序的后人类社会' },
-            { name_cn: '忘川', name_en: 'Lethe', x: 0.7123, y: 0.2245, z: 0.2845, desc: '记忆是可消耗资源的悲剧世界' },
-            { name_cn: '熔炉', name_en: 'Crucible', x: 0.3109, y: 0.2109, z: 0.7234, desc: '非碳基生命的演化试验场' },
-            { name_cn: '共生体', name_en: 'Koinonia', x: 0.4578, y: 0.3011, z: 0.6522, desc: '智慧体必须寄生于巨大宿主的脆弱世界' },
-            { name_cn: '永恒之战', name_en: 'Perpetua', x: 0.6543, y: 0.1234, z: 0.9511, desc: '以冲突为唯一驱动力的战争沙盒' },
-            { name_cn: '多米诺', name_en: 'Domino', x: 0.8034, y: 0.1345, z: 0.6876, desc: '现实逐层降级的嵌套陵墓' },
-            { name_cn: '平台世界', name_en: 'The Terrace', x: 0.9522, y: 0.1188, z: 0.1534, desc: '抹杀所有可能性的、绝对平庸的世界' },
-            { name_cn: '拼布世界', name_en: 'Patchwork', x: 0.1011, y: 0.0899, z: 0.9987, desc: '规则与现实混乱交错的衰变陵墓' },
-            { name_cn: '范式', name_en: 'The Pattern', x: 0.9013, y: 0.0543, z: 0.0213, desc: '所有个体均为同一意识源的复制品' },
-            { name_cn: '独我', name_en: 'Solus', x: 0.8567, y: 0.0611, z: 0.0288, desc: '只有一个真人与无数AI的世界' },
-            { name_cn: '腹地', name_en: 'Hinterland', x: 0.9255, y: 0.0000, z: 0.0111, desc: '由无意识的“哲学僵尸”构成的文明档案馆' },
-            { name_cn: '蜡像馆', name_en: 'The Wax Museum', x: 1.0000, y: 0.0000, z: 0.0001, desc: '时间被永久凝固的、栩栩如生的文明快照' },
-            { name_cn: '提亚马特', name_en: 'Tiamat', x: 0.2105, y: 0.0000, z: 1.0000, desc: '整个星球是一个统一的、癌变的活体地狱' },
-            { name_cn: '原点', name_en: 'The Origin', x: 0.0000, y: 0.0000, z: 0.0000, desc: '宇宙诞生前的混沌奇点，绝对的虚无' },
-            { name_cn: '锚定岛', name_en: 'The Anchor Isle', x: 0.5000, y: 0.5000, z: 0.5000, desc: '维度中转站，校准和稳定不同陵墓的参数' }
+            { name_cn: '地球', name_en: 'Earth', x: 0.9855, y: 0.8234, z: 0.3588, desc: '基准世界，充满可能性与缺陷', imageUrl: 'http://zampona.wikidot.com/local--files/sow-pic/Earth' },
+            { name_cn: '奥比奎亚', name_en: 'Orbiquia', x: 0.9780, y: 0.7231, z: 0.4132, desc: '与地球同级的“双胞胎”世界，科技更发达', imageUrl: 'http://zampona.wikidot.com/local--files/sow-pic/Orbiquia' },
+            { name_cn: '光明境', name_en: 'Lucidia', x: 0.9134, y: 0.9876, z: 0.2543, desc: '后匮乏时代的乌托邦，专注于自我实现', imageUrl: 'http://zampona.wikidot.com/local--files/sow-pic/Lucidia_3' },
+            { name_cn: '样板间', name_en: 'The Showroom', x: 1.0000, y: 1.0000, z: 0.3000, desc: '“先驱”文明从未实现的、绝对完美的理想社会蓝图', imageUrl: 'http://zampona.wikidot.com/local--files/sow-pic/Showroom' },
+            { name_cn: '织梦海', name_en: 'Oneiros', x: 0.0634, y: 0.9567, z: 0.8976, desc: '纯意识构成的梦境世界，想象力是物理法则', imageUrl: 'http://zampona.wikidot.com/local--files/sow-pic/Oneiros' },
+            { name_cn: '阿斯帕拉戈', name_en: 'Asparague', x: 0.7843, y: 0.7112, z: 0.4711, desc: '拥有多种智慧种族的剑与魔法式异世界', imageUrl: 'http://zampona.wikidot.com/local--files/sow-pic/Asparague' },
+            { name_cn: '共治政体', name_en: 'Synarchy', x: 0.5512, y: 0.5000, z: 0.4867, desc: '两种智慧生命强制共生的平衡社会', imageUrl: 'https://placehold.co/400x200/e67e22/ffffff?text=Synarchy' },
+            { name_cn: '拟象界', name_en: 'Simulacra', x: 0.6556, y: 0.4533, z: 0.3229, desc: '由活的文具和工具构成的奇异文明', imageUrl: 'http://zampona.wikidot.com/local--files/sow-pic/Simulacra' },
+            { name_cn: '爱伊忒拿', name_en: 'Aëterna', x: 0.9305, y: 0.3577, z: 0.2463, desc: '由超级AI管理的、追求绝对秩序的后人类社会', imageUrl: 'http://zampona.wikidot.com/local--files/sow-pic/Aeterna' },
+            { name_cn: '班车', name_en: 'Scheduled Bus', x: 0.9843, y: 0.9204, z: 0.6399, desc: '充满无厘头和时空漏洞的现代世界', imageUrl: 'https://placehold.co/400x200/c0392b/ffffff?text=Scheduled Bus' },
+            { name_cn: '忘川', name_en: 'Lethe', x: 0.7123, y: 0.3245, z: 0.2845, desc: '记忆是可消耗资源的悲剧世界', imageUrl: 'https://placehold.co/400x200/d35400/ffffff?text=Lethe' },
+            { name_cn: '熔炉', name_en: 'Crucible', x: 0.3109, y: 0.2109, z: 0.7234, desc: '非碳基生命的演化试验场', imageUrl: 'https://placehold.co/400x200/c0392b/ffffff?text=Crucible' },
+            { name_cn: '共生体', name_en: 'Koinonia', x: 0.4578, y: 0.3011, z: 0.6522, desc: '智慧体必须寄生于巨大宿主的脆弱世界', imageUrl: 'https://placehold.co/400x200/2980b9/ffffff?text=Koinonia' },
+            { name_cn: '永恒之战', name_en: 'Perpetua', x: 0.6543, y: 0.1234, z: 0.9511, desc: '以冲突为唯一驱动力的战争沙盒', imageUrl: 'https://placehold.co/400x200/f39c12/ffffff?text=Perpetua' },
+            { name_cn: '多米诺', name_en: 'Domino', x: 0.8034, y: 0.1345, z: 0.6876, desc: '现实逐层降级的嵌套陵墓', imageUrl: 'http://zampona.wikidot.com/local--files/sow-pic/Domino' },
+            { name_cn: '平台世界', name_en: 'The Terrace', x: 0.9522, y: 0.1188, z: 0.1534, desc: '抹杀所有可能性的、绝对平庸的世界', imageUrl: 'https://placehold.co/400x200/bdc3c7/ffffff?text=Terrace' },
+            { name_cn: '拼布世界', name_en: 'Patchwork', x: 0.1011, y: 0.0899, z: 0.9987, desc: '规则与现实混乱交错的衰变陵墓', imageUrl: 'https://placehold.co/400x200/7f8c8d/ffffff?text=Patchwork' },
+            { name_cn: '范式', name_en: 'The Pattern', x: 0.9013, y: 0.0543, z: 0.0213, desc: '所有个体均为同一意识源的复制品', imageUrl: 'https://placehold.co/400x200/1abc9c/ffffff?text=Pattern' },
+            { name_cn: '独我', name_en: 'Solus', x: 0.8567, y: 0.0611, z: 0.0288, desc: '只有一个真人与无数AI的世界', imageUrl: 'https://placehold.co/400x200/9b59b6/ffffff?text=Solus' },
+            { name_cn: '腹地', name_en: 'Hinterland', x: 0.9255, y: 0.0000, z: 0.0111, desc: '由无意识的“哲学僵尸”构成的文明档案馆', imageUrl: 'https://placehold.co/400x200/ecf0f1/2c3e50?text=Hinterland' },
+            { name_cn: '蜡像馆', name_en: 'The Wax Museum', x: 1.0000, y: 0.0000, z: 0.0001, desc: '时间被永久凝固的、栩栩如生的文明快照', imageUrl: 'http://zampona.wikidot.com/local--files/sow-pic/Wax_Museum' },
+            { name_cn: '提亚马特', name_en: 'Tiamat', x: 0.2105, y: 0.0012, z: 0.8934, desc: '整个星球是一个统一的、癌变的活体地狱', imageUrl: 'http://zampona.wikidot.com/local--files/sow-pic/Tiamat' },
+            { name_cn: '原点', name_en: 'The Origin', x: 0.0000, y: 0.0000, z: 0.0000, desc: '宇宙诞生前的混沌奇点，绝对的虚无', imageUrl: 'https://placehold.co/400x200/000000/ffffff?text=Origin' },
+            { name_cn: '锚定岛', name_en: 'The Anchor Isle', x: 0.5000, y: 0.5000, z: 0.5000, desc: '维度中转站，校准和稳定不同陵墓的参数', imageUrl: 'https://placehold.co/400x200/7f8c8d/ffffff?text=Anchor' }
         ];
 
-        // --- 3. 宜居度计算与颜色映射 ---
+        // --- 数据处理 ---
         const idealDisorder = 0.3;
         const colors = [
-            new THREE.Color(0xff0000), // 红
-            new THREE.Color(0xc000c0), // 紫红
-            new THREE.Color(0x0000ff), // 蓝
-            new THREE.Color(0x008080), // 蓝绿
-            new THREE.Color(0x00ff00), // 翠绿
-            new THREE.Color(0xadff2f)  // 黄绿
+            new THREE.Color(0xff0000), new THREE.Color(0xc000c0), new THREE.Color(0x0000ff),
+            new THREE.Color(0x008080), new THREE.Color(0x15ab15), new THREE.Color(0xadff2f)
         ];
-
         const getColor = (value) => {
             const colorIndex = Math.floor(value * (colors.length - 1));
             const t = value * (colors.length - 1) - colorIndex;
             if (colorIndex >= colors.length - 1) return colors[colors.length - 1];
             return new THREE.Color().lerpColors(colors[colorIndex], colors[colorIndex + 1], t);
         };
-
         mausoleumData.forEach(world => {
-            let livability = (world.x * world.y) * (1 - Math.abs(world.z - idealDisorder));
+            const potential = (world.x * 0.6) + (world.y * 0.4);
+            const disorderPenalty = Math.abs(world.z - idealDisorder);
+            let livability = potential * (1 - disorderPenalty);
             world.livability = Math.max(0, Math.min(livability, 1));
             world.color = getColor(world.livability);
         });
 
-        // --- 4. 创建场景对象 ---
-        const CUBE_SIZE = 10;
-        const objects = [];
-        const group = new THREE.Group();
-        scene.add(group);
-
-        // 坐标轴
-        const axisColors = { x: '#4169E1', y: '#34C759', z: '#8A2BE2' }; // Royal Blue, Emerald, Violet
-        const createAxis = (dir, color) => {
-            const origin = new THREE.Vector3(0,0,0);
-            const length = CUBE_SIZE;
-            const arrowHelper = new THREE.ArrowHelper(dir, origin, length, color, 0.4, 0.2);
-            arrowHelper.line.material.linewidth = 3;
-            group.add(arrowHelper);
+        // --- 图片预加载 ---
+        const preloadImages = () => {
+            mausoleumData.forEach(world => {
+                if (world.imageUrl) { (new Image()).src = world.imageUrl; }
+            });
         };
-        createAxis(new THREE.Vector3(1, 0, 0), axisColors.x);
-        createAxis(new THREE.Vector3(0, 1, 0), axisColors.y);
-        createAxis(new THREE.Vector3(0, 0, 1), axisColors.z);
 
-        // 坐标轴标签
-        const createLabel = (text, position, color) => {
-            const div = document.createElement('div');
-            div.className = 'font-bold text-lg';
-            div.textContent = text;
-            div.style.color = color;
-            const label = new CSS2DObject(div);
-            label.position.copy(position);
-            group.add(label);
-        };
-        createLabel('X: 现实强度', new THREE.Vector3(CUBE_SIZE + 1.5, 0, 0), axisColors.x);
-        createLabel('Y: 个体自由度', new THREE.Vector3(0, CUBE_SIZE + 1.5, 0), axisColors.y);
-        createLabel('Z: 无序度', new THREE.Vector3(0, 0, CUBE_SIZE + 1.5), axisColors.z);
+        // --- 视图切换逻辑 ---
+        const view3D = document.getElementById('view-3d');
+        const view2DGrid = document.getElementById('view-2d-grid');
+        const view2DPlotWrapper = document.getElementById('view-2d-plot-wrapper');
+        const controls3D = document.getElementById('controls-3d');
+        const controls2DPlot = document.getElementById('controls-2d-plot');
 
-        // 象限分割平面
-        const planeGroup = new THREE.Group();
-        const planeGeom = new THREE.PlaneGeometry(CUBE_SIZE, CUBE_SIZE);
-        
-        const planeXY = new THREE.Mesh(planeGeom, new THREE.MeshBasicMaterial({ color: axisColors.z, side: THREE.DoubleSide, transparent: true, opacity: 0.1 }));
-        planeXY.position.set(CUBE_SIZE / 2, CUBE_SIZE / 2, CUBE_SIZE / 2);
-        planeGroup.add(planeXY);
+        document.querySelectorAll('input[name="view-mode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                view3D.classList.add('hidden');
+                view2DGrid.classList.add('hidden');
+                view2DPlotWrapper.classList.add('hidden');
+                controls3D.classList.add('hidden');
+                controls2DPlot.classList.add('hidden');
 
-        const planeXZ = new THREE.Mesh(planeGeom, new THREE.MeshBasicMaterial({ color: axisColors.y, side: THREE.DoubleSide, transparent: true, opacity: 0.1 }));
-        planeXZ.rotation.x = -Math.PI / 2;
-        planeXZ.position.set(CUBE_SIZE / 2, CUBE_SIZE / 2, CUBE_SIZE / 2);
-        planeGroup.add(planeXZ);
-        
-        const planeYZ = new THREE.Mesh(planeGeom, new THREE.MeshBasicMaterial({ color: axisColors.x, side: THREE.DoubleSide, transparent: true, opacity: 0.1 }));
-        planeYZ.rotation.y = Math.PI / 2;
-        planeYZ.position.set(CUBE_SIZE / 2, CUBE_SIZE / 2, CUBE_SIZE / 2);
-        planeGroup.add(planeYZ);
-        
-        group.add(planeGroup);
-
-        // 数据点
-        const sphereGeometry = new THREE.SphereGeometry(0.12, 24, 24);
-        mausoleumData.forEach(world => {
-            const material = new THREE.MeshBasicMaterial({ color: world.color });
-            const sphere = new THREE.Mesh(sphereGeometry, material);
-            sphere.position.set(world.x * CUBE_SIZE, world.y * CUBE_SIZE, world.z * CUBE_SIZE);
-            sphere.userData = world;
-            group.add(sphere);
-            objects.push(sphere);
+                if (e.target.value === '3d') {
+                    view3D.classList.remove('hidden');
+                    controls3D.classList.remove('hidden');
+                } else if (e.target.value === '2d-grid') {
+                    view2DGrid.classList.remove('hidden');
+                } else {
+                    view2DPlotWrapper.classList.remove('hidden');
+                    controls2DPlot.classList.remove('hidden');
+                    draw2DPlot(); // Redraw when switched to
+                }
+            });
         });
-        
-        // --- 5. 设置相机和控制器 ---
-        camera.position.set(12, 12, 12);
-        const center = new THREE.Vector3(CUBE_SIZE / 2, CUBE_SIZE / 2, CUBE_SIZE / 2);
-        camera.lookAt(center);
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.target.copy(center);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
 
-        // --- 6. 交互逻辑 ---
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-        const tooltip = document.getElementById('tooltip');
-        let intersectedObject = null;
-        let lastMouseEvent = null; 
+        // --- 3D场景构建 ---
+        function create3DStarfield() {
+            const vertices = [];
+            for (let i = 0; i < 10000; i++) {
+                const x = THREE.MathUtils.randFloatSpread(200);
+                const y = THREE.MathUtils.randFloatSpread(200);
+                const z = THREE.MathUtils.randFloatSpread(200);
+                vertices.push(x, y, z);
+            }
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            const material = new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 });
+            const points = new THREE.Points(geometry, material);
+            points.visible = false; // Initially hidden
+            return points;
+        }
 
-        window.addEventListener('mousemove', onMouseMove);
-        
+        function init3D() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xffffff);
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('container-3d').appendChild(renderer.domElement);
+            
+            labelRenderer = new CSS2DRenderer();
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.domElement.style.position = 'absolute';
+            labelRenderer.domElement.style.top = '0px';
+            labelRenderer.domElement.style.pointerEvents = 'none';
+            document.getElementById('container-3d').appendChild(labelRenderer.domElement);
+
+            starfield = create3DStarfield();
+            scene.add(starfield);
+
+            const group = new THREE.Group();
+            scene.add(group);
+
+            const createAxis = (dir, color) => {
+                const origin = new THREE.Vector3(0,0,0);
+                const arrowHelper = new THREE.ArrowHelper(dir, origin, CUBE_SIZE, color, 0.4, 0.2);
+                arrowHelper.line.material.linewidth = 3;
+                group.add(arrowHelper);
+            };
+            const createLabel = (text, position, color) => {
+                const div = document.createElement('div');
+                div.className = 'font-bold text-lg';
+                div.textContent = text;
+                div.style.color = color;
+                const label = new CSS2DObject(div);
+                label.position.copy(position);
+                group.add(label);
+            };
+            
+            const updateAxesAndLabels = () => {
+                group.children.filter(c => c.type === 'ArrowHelper' || c.isCSS2DObject).forEach(c => group.remove(c));
+                const currentColors = document.body.classList.contains('dark') ? { x: '#60A5FA', y: '#4ADE80', z: '#C084FC' } : axisColors;
+                createAxis(new THREE.Vector3(1, 0, 0), currentColors.x);
+                createAxis(new THREE.Vector3(0, 1, 0), currentColors.y);
+                createAxis(new THREE.Vector3(0, 0, 1), currentColors.z);
+                createLabel('X: 现实强度', new THREE.Vector3(CUBE_SIZE + 1.5, 0, 0), currentColors.x);
+                createLabel('Y: 个体自由度', new THREE.Vector3(0, CUBE_SIZE + 1.5, 0), currentColors.y);
+                createLabel('Z: 无序度', new THREE.Vector3(0, 0, CUBE_SIZE + 1.5, 0), currentColors.z);
+            };
+            
+            updateAxesAndLabels();
+
+            const planeGroup = new THREE.Group();
+            const planeGeom = new THREE.PlaneGeometry(CUBE_SIZE, CUBE_SIZE);
+            const planeXY = new THREE.Mesh(planeGeom, new THREE.MeshBasicMaterial({ color: axisColors.z, side: THREE.DoubleSide, transparent: true, opacity: 0.1 }));
+            planeXY.position.set(CUBE_SIZE / 2, CUBE_SIZE / 2, CUBE_SIZE / 2);
+            planeGroup.add(planeXY);
+            const planeXZ = new THREE.Mesh(planeGeom, new THREE.MeshBasicMaterial({ color: axisColors.y, side: THREE.DoubleSide, transparent: true, opacity: 0.1 }));
+            planeXZ.rotation.x = -Math.PI / 2;
+            planeXZ.position.set(CUBE_SIZE / 2, CUBE_SIZE / 2, CUBE_SIZE / 2);
+            planeGroup.add(planeXZ);
+            const planeYZ = new THREE.Mesh(planeGeom, new THREE.MeshBasicMaterial({ color: axisColors.x, side: THREE.DoubleSide, transparent: true, opacity: 0.1 }));
+            planeYZ.rotation.y = Math.PI / 2;
+            planeYZ.position.set(CUBE_SIZE / 2, CUBE_SIZE / 2, CUBE_SIZE / 2);
+            planeGroup.add(planeYZ);
+            group.add(planeGroup);
+            document.getElementById('toggle-quadrants').addEventListener('change', (e) => {
+                planeGroup.visible = e.target.checked;
+            });
+
+            const sphereGeometry = new THREE.SphereGeometry(0.12, 24, 24);
+            mausoleumData.forEach(world => {
+                const material = new THREE.MeshBasicMaterial({ color: world.color });
+                const sphere = new THREE.Mesh(sphereGeometry, material);
+                sphere.position.set(world.x * CUBE_SIZE, world.y * CUBE_SIZE, world.z * CUBE_SIZE);
+                sphere.userData = world;
+                group.add(sphere);
+                objects.push(sphere);
+            });
+            
+            camera.position.set(12, 12, 12);
+            const center = new THREE.Vector3(CUBE_SIZE / 2, CUBE_SIZE / 2, CUBE_SIZE / 2);
+            camera.lookAt(center);
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.target.copy(center);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            window.addEventListener('mousemove', onMouseMove);
+            animate3D();
+            return { updateAxesAndLabels };
+        }
+
+        // --- 2D视图构建 ---
+        function init2DGrid() {
+            const gridContainer = document.getElementById('grid-container');
+            gridContainer.innerHTML = ''; // Clear
+            mausoleumData.forEach(data => {
+                const livabilityColor = data.color.getStyle();
+                const currentColors = document.body.classList.contains('dark') ? { x: '#60A5FA', y: '#4ADE80', z: '#C084FC' } : axisColors;
+
+                const imageHTML = `
+                    <div class="tooltip-image-container">
+                        <img src="${data.imageUrl}" alt="${data.name_cn}" class="tooltip-image" onerror="this.src='https://placehold.co/400x200/7f8c8d/ffffff?text=No+Image'">
+                        <div class="glitch-overlay"></div>
+                    </div>`;
+                
+                const cardHTML = `
+                    <div class="grid-card rounded-2xl overflow-hidden shadow-lg">
+                        ${imageHTML}
+                        <div class="p-4">
+                            <div class="flex flex-col space-y-3">
+                                <div>
+                                    <p class="font-bold text-lg text-main">${data.name_cn}</p>
+                                    <p class="text-sm text-subtle -mt-1">${data.name_en}</p>
+                                </div>
+                                <p class="text-sm text-subtle border-t border-divider pt-3 h-20 overflow-y-auto">${data.desc}</p>
+                                <div class="grid grid-cols-3 gap-3 text-center border-t border-divider pt-3">
+                                    <div>
+                                        <div class="text-xs text-gray-400">现实强度</div>
+                                        <div class="coord-label text-lg" style="color: ${currentColors.x};">${data.x.toFixed(4)}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-400">个体自由度</div>
+                                        <div class="coord-label text-lg" style="color: ${currentColors.y};">${data.y.toFixed(4)}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-400">无序度</div>
+                                        <div class="coord-label text-lg" style="color: ${currentColors.z};">${data.z.toFixed(4)}</div>
+                                    </div>
+                                </div>
+                                <div class="border-t border-divider pt-3 flex justify-between items-center">
+                                    <span class="font-bold text-main">宜居度</span>
+                                    <span class="livability-text text-xl" style="color: ${livabilityColor}; text-shadow: 0 0 8px ${livabilityColor}99;">${data.livability.toFixed(4)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                gridContainer.innerHTML += cardHTML;
+            });
+        }
+
+        // --- 2D坐标图构建 ---
+        const plotOptions = {
+            'x': { name: '现实强度', key: 'x' },
+            'y': { name: '个体自由度', key: 'y' },
+            'z': { name: '无序度', key: 'z' },
+            'livability': { name: '宜居度', key: 'livability' }
+        };
+
+        const xAxisSelect = document.getElementById('x-axis-select');
+        const yAxisSelect = document.getElementById('y-axis-select');
+        const colorSelect = document.getElementById('color-select');
+
+        function populateSelects() {
+            Object.values(plotOptions).forEach(opt => {
+                xAxisSelect.innerHTML += `<option value="${opt.key}">${opt.name}</option>`;
+                yAxisSelect.innerHTML += `<option value="${opt.key}">${opt.name}</option>`;
+                colorSelect.innerHTML += `<option value="${opt.key}">${opt.name}</option>`;
+            });
+            xAxisSelect.value = 'x';
+            yAxisSelect.value = 'y';
+            colorSelect.value = 'livability';
+
+            [xAxisSelect, yAxisSelect, colorSelect].forEach(select => {
+                select.addEventListener('change', draw2DPlot);
+            });
+        }
+
+        function draw2DPlot() {
+            const xKey = xAxisSelect.value;
+            const yKey = yAxisSelect.value;
+            const colorKey = colorSelect.value;
+            
+            const trace = {
+                x: mausoleumData.map(w => w[xKey]),
+                y: mausoleumData.map(w => w[yKey]),
+                mode: 'markers',
+                type: 'scatter',
+                text: mausoleumData.map(w => `<b>${w.name_cn}</b><br>${plotOptions.x.name}: ${w.x}<br>${plotOptions.y.name}: ${w.y}<br>${plotOptions.z.name}: ${w.z}`),
+                hoverinfo: 'text',
+                marker: {
+                    size: 12,
+                    color: mausoleumData.map(w => w[colorKey]),
+                    colorscale: 'Viridis',
+                    colorbar: { title: plotOptions[colorKey].name },
+                    showscale: true
+                }
+            };
+            
+            const isDark = document.body.classList.contains('dark');
+            const layout = {
+                xaxis: { title: plotOptions[xKey].name, gridcolor: isDark ? '#374151' : '#e5e7eb' },
+                yaxis: { title: plotOptions[yKey].name, gridcolor: isDark ? '#374151' : '#e5e7eb' },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: isDark ? '#d1d5db' : '#1f2937' },
+                margin: { l: 60, r: 20, b: 50, t: 20 },
+            };
+
+            Plotly.newPlot('plot-2d-container', [trace], layout, {responsive: true});
+        }
+
+        // --- 动画与交互 ---
         function onMouseMove(event) {
             lastMouseEvent = event; 
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
         }
         
-        // UI Controls
         document.getElementById('toggle-title').addEventListener('change', (e) => {
             document.getElementById('header').style.opacity = e.target.checked ? '1' : '0';
         });
-        document.getElementById('toggle-quadrants').addEventListener('change', (e) => {
-            planeGroup.visible = e.target.checked;
+        document.getElementById('toggle-legend').addEventListener('change', (e) => {
+            document.getElementById('legend').style.opacity = e.target.checked ? '1' : '0';
         });
 
-        // --- 7. 动画循环 ---
-        function animate() {
-            requestAnimationFrame(animate);
+        const panel = document.querySelector('.control-panel');
+        const panelArrow = document.getElementById('panel-arrow');
+        document.getElementById('panel-toggle-btn').addEventListener('click', () => {
+            const isCollapsed = panel.style.transform === 'translateX(-100%)';
+            panel.style.transform = isCollapsed ? 'translateX(0)' : 'translateX(-100%)';
+            panelArrow.style.transform = isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)';
+        });
+
+        const themeToggle = document.getElementById('toggle-theme');
+        const { updateAxesAndLabels } = init3D();
+        themeToggle.addEventListener('change', (e) => {
+            document.body.classList.toggle('dark', e.target.checked);
+            starfieldCanvas.style.opacity = e.target.checked ? '1' : '0';
+            if (scene) {
+                scene.background = new THREE.Color(e.target.checked ? 0x030712 : 0xffffff);
+                starfield.visible = e.target.checked;
+                updateAxesAndLabels();
+            }
+            if (!view2DPlotWrapper.classList.contains('hidden')) {
+                draw2DPlot();
+            }
+             init2DGrid(); // Redraw grid to update axis colors
+        });
+
+        function animate3D() {
+            if (view3D.classList.contains('hidden')) {
+                requestAnimationFrame(animate3D);
+                return;
+            }
+            requestAnimationFrame(animate3D);
             controls.update();
 
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(objects);
 
             if (intersects.length > 0) {
-                if (intersectedObject !== intersects[0].object) {
-                    intersectedObject = intersects[0].object;
-                }
+                intersectedObject = intersects[0].object;
                 tooltip.style.display = 'block';
                 const data = intersectedObject.userData;
                 const livabilityColor = data.color.getStyle();
+                const currentColors = document.body.classList.contains('dark') ? { x: '#60A5FA', y: '#4ADE80', z: '#C084FC' } : axisColors;
                 
+                const imageHTML = `
+                    <div class="tooltip-image-container">
+                        <img src="${data.imageUrl}" alt="${data.name_cn}" class="tooltip-image" onerror="this.src='https://placehold.co/400x200/7f8c8d/ffffff?text=No+Image'">
+                        <div class="glitch-overlay"></div>
+                    </div>`;
+
                 tooltip.innerHTML = `
-                    <div class="flex flex-col space-y-3">
-                        <div>
-                            <p class="font-bold text-lg text-gray-900">${data.name_cn}</p>
-                            <p class="text-sm text-gray-500 -mt-1">${data.name_en}</p>
-                        </div>
-                        <p class="text-sm text-gray-600 border-t border-gray-200 pt-2">${data.desc}</p>
-                        <div class="grid grid-cols-3 gap-2 text-center border-t border-gray-200 pt-2">
+                    ${imageHTML}
+                    <div class="p-4">
+                        <div class="flex flex-col space-y-3">
                             <div>
-                                <div class="text-xs text-gray-400">现实强度</div>
-                                <div class="coord-label text-lg" style="color: ${axisColors.x};">${data.x.toFixed(4)}</div>
+                                <p class="font-bold text-lg">${data.name_cn}</p>
+                                <p class="text-sm text-subtle -mt-1">${data.name_en}</p>
                             </div>
-                            <div>
-                                <div class="text-xs text-gray-400">个体自由度</div>
-                                <div class="coord-label text-lg" style="color: ${axisColors.y};">${data.y.toFixed(4)}</div>
+                            <p class="text-sm text-subtle border-t border-divider pt-3">${data.desc}</p>
+                            <div class="grid grid-cols-3 gap-3 text-center border-t border-divider pt-3">
+                                <div><div class="text-xs text-gray-400">现实强度</div><div class="coord-label text-lg" style="color: ${currentColors.x};">${data.x.toFixed(4)}</div></div>
+                                <div><div class="text-xs text-gray-400">个体自由度</div><div class="coord-label text-lg" style="color: ${currentColors.y};">${data.y.toFixed(4)}</div></div>
+                                <div><div class="text-xs text-gray-400">无序度</div><div class="coord-label text-lg" style="color: ${currentColors.z};">${data.z.toFixed(4)}</div></div>
                             </div>
-                            <div>
-                                <div class="text-xs text-gray-400">无序度</div>
-                                <div class="coord-label text-lg" style="color: ${axisColors.z};">${data.z.toFixed(4)}</div>
+                            <div class="border-t border-divider pt-3 flex justify-between items-center">
+                                <span class="font-bold text-main">宜居度</span>
+                                <span class="livability-text text-xl" style="color: ${livabilityColor}; text-shadow: 0 0 8px ${livabilityColor}99;">${data.livability.toFixed(4)}</span>
                             </div>
-                        </div>
-                        <div class="border-t border-gray-200 pt-2 flex justify-between items-center">
-                            <span class="font-bold text-gray-700">宜居度</span>
-                            <span class="livability-text text-xl" style="color: ${livabilityColor}; text-shadow: 0 0 8px ${livabilityColor}99;">${data.livability.toFixed(4)}</span>
                         </div>
                     </div>
                 `;
@@ -313,14 +585,10 @@
 
             if (lastMouseEvent && tooltip.style.display === 'block') {
                 let x = lastMouseEvent.clientX + 20;
-                let y = lastMouseEvent.clientY + 20;
-                
-                if (x + tooltip.offsetWidth > window.innerWidth - 20) {
-                    x = lastMouseEvent.clientX - tooltip.offsetWidth - 20;
-                }
-                if (y + tooltip.offsetHeight > window.innerHeight - 20) {
-                    y = lastMouseEvent.clientY - tooltip.offsetHeight - 20;
-                }
+                let y = lastMouseEvent.clientY;
+                if (x + tooltip.offsetWidth > window.innerWidth - 20) { x = lastMouseEvent.clientX - tooltip.offsetWidth - 20; }
+                if (y + tooltip.offsetHeight > window.innerHeight - 20) { y = window.innerHeight - tooltip.offsetHeight - 20; }
+                if (y < 20) { y = 20; }
                 tooltip.style.left = x + 'px';
                 tooltip.style.top = y + 'px';
             }
@@ -329,15 +597,63 @@
             labelRenderer.render(scene, camera);
         }
         
-        // --- 8. 窗口大小调整 ---
+        // --- Starfield Background for 2D views ---
+        function initStarfieldCanvas() {
+            starfieldCanvas = document.getElementById('starfield-canvas-bg');
+            starfieldCtx = starfieldCanvas.getContext('2d');
+            resizeStarfield();
+            animateStarfield();
+        }
+
+        function resizeStarfield() {
+            starfieldCanvas.width = window.innerWidth;
+            starfieldCanvas.height = window.innerHeight;
+            stars = [];
+            for (let i = 0; i < 500; i++) {
+                stars.push({
+                    x: Math.random() * starfieldCanvas.width,
+                    y: Math.random() * starfieldCanvas.height,
+                    radius: Math.random() * 1.2,
+                    alpha: Math.random() * 0.5 + 0.5,
+                    speed: Math.random() * 0.1 + 0.05
+                });
+            }
+        }
+        function animateStarfield() {
+            starfieldCtx.clearRect(0, 0, starfieldCanvas.width, starfieldCanvas.height);
+            starfieldCtx.fillStyle = '#030712';
+            starfieldCtx.fillRect(0, 0, starfieldCanvas.width, starfieldCanvas.height);
+            stars.forEach(star => {
+                star.x -= star.speed;
+                if (star.x < 0) star.x = starfieldCanvas.width;
+                starfieldCtx.beginPath();
+                starfieldCtx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                starfieldCtx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+                starfieldCtx.fill();
+            });
+            requestAnimationFrame(animateStarfield);
+        }
+
+        // --- 窗口大小调整 ---
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            if(camera && renderer && labelRenderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            }
+            if (!view2DPlotWrapper.classList.contains('hidden')) {
+                Plotly.Plots.resize('plot-2d-container');
+            }
+            resizeStarfield();
         });
 
-        animate();
+        // --- 初始化 ---
+        preloadImages();
+        init2DGrid();
+        populateSelects();
+        draw2DPlot();
+        initStarfieldCanvas();
     </script>
 </body>
 </html>
