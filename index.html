@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随星录 - 企划门户</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Inter和Noto Sans SC字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            /* 移除背景图和颜色，将由canvas处理 */
+        }
+        /* 卡片悬停时的辉光和浮动效果 */
+        .portal-card {
+            background-color: rgba(17, 24, 39, 0.7); /* bg-gray-900/70 */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(55, 65, 81, 0.5); /* border-gray-700/50 */
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .portal-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.3); /* shadow-sky-400/30 */
+            border-color: rgba(56, 189, 248, 0.5); /* border-sky-400/50 */
+        }
+        /* 卡片内部的伪元素光效 */
+        .portal-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(125, 211, 252, 0.15) 0%, transparent 40%);
+            transition: opacity 0.5s;
+            opacity: 0;
+            pointer-events: none;
+            animation: rotate 10s linear infinite;
+        }
+        .portal-card:hover::before {
+            opacity: 1;
+        }
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        /* Canvas背景 */
+        #starfield-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200">
+    <!-- 动态星空背景 -->
+    <canvas id="starfield-canvas"></canvas>
+
+    <div class="relative min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+        <!-- 页面主标题 -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold text-white tracking-wider">
+                随星录
+            </h1>
+            <p class="text-lg sm:text-xl text-sky-300 mt-2 tracking-widest font-mono">A STELLALOGUE OF WHIMSIES</p>
+            <div class="w-24 h-px bg-sky-400/50 mx-auto mt-6"></div>
+        </header>
+
+        <!-- 子网站链接卡片容器 -->
+        <main class="w-full max-w-5xl">
+            <div id="portal-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- 卡片将由JavaScript动态生成 -->
+            </div>
+        </main>
+
+        <footer class="absolute bottom-4 text-center text-gray-600 text-xs">
+            <p>&copy; 2025 S.O.W. Project. All Rights Reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- 子网站数据 ---
+        // 在这里添加或修改你的子网站信息
+        // url: 链接地址
+        // title: 卡片主标题
+        // subtitle: 卡片副标题 (英文或代号)
+        // description: 简短描述
+        const subSites = [
+            {
+                url: 'SOW_Mausoleum_worlds.html',
+                title: '陵墓全息星图',
+                subtitle: 'The Mausoleum',
+                description: '交互式三维坐标图，探索已知的所有“陵墓”子世界及其详细参数。'
+            },
+            {
+                url: 'SOW_global_map.html',
+                title: '全球时局图',
+                subtitle: 'Global Situation Map',
+                description: '交互式世界地图，展示《随星录：冰逝》世界线中，全球元素使的分布与阵营势力。'
+            },
+            {
+                url: 'Element_test.html',
+                title: '元素使灵魂测试',
+                subtitle: 'Elementalist Soul Test',
+                description: '一个交互式心理测试，通过一系列问题分析你的灵魂特质，并匹配最契合的元素使。'
+            },
+            {
+                url: 'Element_draw.html',
+                title: '元素使召唤模拟',
+                subtitle: 'Gacha Simulator',
+                description: '体验《随星录》世界中的元素使召唤系统，看看你能否召唤出稀有的元素使伙伴。'
+            },
+            {
+                url: 'https://www.qidian.com/book/1045383579/',
+                title: '《随星录：冰逝》',
+                subtitle: 'A Stellalogue Of Whimsies: The Requiem Of Thaw',
+                description: '《随星录》最新的正传。欢迎前来阅读。'
+            },
+            {
+                url: 'https://www.17k.com/book/3087560.html',
+                title: '《随星录》（旧）',
+                subtitle: 'A Stellalogue Of Whimsies: Randomized Celestial Catalog',
+                description: '《随星录》梦开始的地方。'
+            },
+            // 如果有新的子网站，在这里添加新的对象即可
+            // {
+            //     url: 'new_page.html',
+            //     title: '新的项目',
+            //     subtitle: 'New Project',
+            //     description: '这是一个未来新项目的描述。'
+            // }
+        ];
+
+        // --- 动态生成卡片 ---
+        const grid = document.getElementById('portal-grid');
+        subSites.forEach(site => {
+            const cardHTML = `
+                <a href="${site.url}" target="_blank" class="block portal-card rounded-2xl p-6 transform hover:z-10">
+                    <div class="relative z-10">
+                        <h2 class="text-2xl font-bold text-white">${site.title}</h2>
+                        <p class="text-sm font-mono text-sky-400 mt-1">${site.subtitle}</p>
+                        <p class="text-gray-400 mt-4 text-sm leading-relaxed">${site.description}</p>
+                        <div class="mt-6 text-sky-300 font-semibold flex items-center group">
+                            <span>连接终端</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </div>
+                    </div>
+                </a>
+            `;
+            grid.innerHTML += cardHTML;
+        });
+
+        // --- 动态星空背景脚本 ---
+        const canvas = document.getElementById('starfield-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let stars = [];
+        let numStars = 500;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            stars = [];
+            for (let i = 0; i < numStars; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 1.5 + 0.5,
+                    alpha: Math.random(),
+                    speed: Math.random() * 0.2 + 0.1
+                });
+            }
+        }
+
+        function drawStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0c1424'; // 深蓝背景
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            stars.forEach(star => {
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(224, 242, 254, ${star.alpha})`; // sky-100
+                ctx.fill();
+
+                star.x -= star.speed;
+                if (star.x < 0) {
+                    star.x = canvas.width;
+                }
+            });
+        }
+
+        function animate() {
+            drawStars();
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        animate();
+    </script>
+</body>
+</html>
