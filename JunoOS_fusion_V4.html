@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>JunoOS Fusion (V2.5_2 base · Plus)</title>
+<style>
+:root{
+  --glass-bg: rgba(255,255,255,.30);
+  --glass-border: rgba(255,255,255,.55);
+  --glass-shadow: 0 12px 40px rgba(31,38,135,.22);
+  --taskbar-h: 48px;
+  --accent: #80ffea;
+  --accent-strong: #00c3ff;
+  --pink: #ff6ec7;
+  --win-radius: 12px;
+  --hdr-top: rgba(255,255,255,.90); /* weaken header gloss */
+  --hdr-bot: rgba(220,238,255,.85);
+}
+*{box-sizing:border-box;user-select:none}
+html,body{height:100%}
+body{
+  margin:0; overflow:hidden; font-family:'Segoe UI','Microsoft YaHei','Hiragino Sans',sans-serif;
+  background:#9fe8ff url('https://images.unsplash.com/photo-1557683316-973673baf926?w=1920') center/cover fixed no-repeat;
+  transition:background-image .5s ease, background .5s ease;
+}
+/* Glass + Frutiger Aero vibe */
+.glass{background:var(--glass-bg);backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);border:1px solid var(--glass-border);border-radius:var(--win-radius);box-shadow:var(--glass-shadow)}
+.glossy{position:relative;overflow:hidden}
+.glossy::after{content:"";position:absolute;inset:0 0 54% 0;background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,.06));pointer-events:none;border-radius:inherit}/* weaker highlight */
+
+/* Desktop */
+#desktop{position:relative;height:calc(100vh - var(--taskbar-h));}
+.icon{position:absolute;width:90px;text-align:center;color:#fff;text-shadow:0 2px 7px rgba(0,0,0,.45);cursor:grab;padding:6px;border-radius:12px;transition:.12s}
+.icon:active{cursor:grabbing;transform:scale(.98)}
+.icon:hover{background:rgba(255,255,255,.17)}
+.icon-img{width:60px;height:60px;margin:0 auto 6px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;border:2px solid #fff;background:linear-gradient(180deg,#fff,#a8e6ff);box-shadow:0 8px 16px rgba(0,150,255,.35)}
+
+/* Taskbar */
+#taskbar{position:fixed;inset:auto 0 0 0;height:var(--taskbar-h);display:flex;align-items:center;padding:0 8px;z-index:9000;background:linear-gradient(180deg,rgba(255,255,255,.8),rgba(210,240,255,.85));backdrop-filter:blur(25px);border-top:1px solid rgba(255,255,255,.7)}
+#start-btn{padding:6px 18px 8px;background:linear-gradient(180deg,#74f2ce,#00c3ff);border-radius:22px 4px 22px 4px;color:#fff;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.35);border:2px solid #fff;box-shadow:0 4px 12px rgba(0,180,255,.45);margin-right:10px;transition:.25s}
+#start-btn:hover{filter:brightness(1.12);box-shadow:0 0 18px var(--accent)}
+#task-apps{flex:1;display:flex;gap:6px;overflow-x:auto;padding:4px 0}
+.task-entry{min-width:150px;height:36px;padding:0 12px;display:flex;align-items:center;gap:8px;border-radius:10px;background:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.55);font-size:13px;color:#235;cursor:pointer;transition:.2s;white-space:nowrap;overflow:hidden}
+.task-entry:hover{background:rgba(255,255,255,.8)}
+.task-entry.active{background:linear-gradient(180deg,#eef,#cceaff);border-color:#00b7ff;box-shadow:inset 0 0 12px rgba(180,230,255,.9)}
+#sys-tray{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.05);padding:6px 14px;border-radius:16px;box-shadow:inset 0 1px 4px rgba(0,0,0,.12);color:#335;font-size:13px}
+
+/* Start menu */
+#start-menu{position:fixed;left:12px;bottom:calc(var(--taskbar-h) + 8px);width:320px;display:none;flex-direction:column;overflow:hidden;z-index:9050;border-radius:16px 16px 8px 8px;box-shadow:0 14px 40px rgba(0,0,0,.28)}
+.start-header{display:flex;align-items:center;padding:16px;background:linear-gradient(135deg,#00c3ff,#80ffea);color:#fff;font-weight:700}
+.user-avatar{width:46px;height:46px;margin-right:12px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#fff;color:#00a8ff;font-size:22px;border:2px solid rgba(255,255,255,.6)}
+#start-list{background:rgba(255,255,255,.88);max-height:360px;overflow:auto}
+.start-item{padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;color:#334;transition:.15s}
+.start-item:hover{background:#eef9ff;color:#0073b1}
+.start-footer{display:flex;justify-content:flex-end;gap:10px;padding:10px 12px;background:#eef;border-top:1px solid rgba(180,200,230,.6)}
+.start-footer button{padding:6px 14px;border-radius:12px;background:rgba(255,255,255,.7);border:1px solid rgba(0,0,0,.1);font-weight:700;color:#335}
+
+/* Window system */
+.window{position:absolute;display:flex;flex-direction:column;min-width:320px;min-height:220px;background:rgba(236,247,255,.95);border-radius:var(--win-radius);border:1px solid rgba(255,255,255,.75);box-shadow:0 18px 40px rgba(0,0,0,.25);resize:both;animation:popIn .25s cubic-bezier(.25,1.4,.45,1)}
+@keyframes popIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+.window.maximized{top:0!important;left:0!important;width:100%!important;height:calc(100vh - var(--taskbar-h))!important;border-radius:0;resize:none}
+.win-header{display:flex;align-items:center;padding:10px 12px;background:linear-gradient(180deg,var(--hdr-top),var(--hdr-bot));border-bottom:1px solid rgba(170,200,230,.8);color:#224;font-size:14px;font-weight:600;cursor:grab}
+.win-icon{margin-right:8px}
+.win-title{flex:1;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.win-controls{display:flex;gap:6px}
+.win-btn{width:24px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.15);background:linear-gradient(180deg,#fff,#ececec);display:flex;align-items:center;justify-content:center;font-size:12px;color:#335;cursor:pointer}
+.win-btn:hover{filter:brightness(1.08)}
+.win-btn.close-btn:hover{background:#ff6f6f;color:#fff;border-color:#d33}
+.win-content{flex:1;background:rgba(255,255,255,.78);overflow:auto;position:relative}
+
+/* Chat (InChat) */
+.chat-container{display:flex;flex-direction:column;height:100%}
+.chat-toolbar{display:flex;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid rgba(180,200,230,.55);background:rgba(240,244,255,.85)}
+.chat-toolbar label{display:flex;align-items:center;gap:6px;font-weight:700;color:#224}
+.chat-log{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:80%;padding:10px 14px;border-radius:18px;line-height:1.45;font-size:14px;white-space:pre-wrap}
+.msg.juno{align-self:flex-start;background:#fff;border:2px solid var(--accent);color:#006699;border-bottom-left-radius:6px}
+.msg.user{align-self:flex-end;background:var(--accent-strong);color:#fff;border-bottom-right-radius:6px;box-shadow:0 4px 10px rgba(0,160,255,.28)}
+.chat-input{padding:10px;display:flex;gap:10px;border-top:1px solid rgba(180,200,230,.55);background:rgba(255,255,255,.8)}
+.chat-input input{flex:1;padding:10px 14px;border-radius:22px;border:2px solid var(--accent);outline:none;background:#fff}
+.chat-input button{padding:0 22px;border-radius:24px;background:var(--accent-strong);color:#fff;font-weight:800;border:none}
+
+/* Apps generic */
+.app-toolbar{height:42px;display:flex;align-items:center;gap:10px;padding:0 12px;background:rgba(240,244,255,.85);border-bottom:1px solid rgba(180,200,230,.55)}
+#note-area{width:100%;height:calc(100% - 42px);border:none;padding:16px;resize:none;font-family:Consolas,monospace;font-size:14px;background:transparent;outline:none;color:#234}
+
+/* InPaint */
+.paint-workspace{flex:1;display:flex;justify-content:center;align-items:center;padding:12px;background:rgba(230,240,250,.6)}
+#paint-canvas{background:#fff;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.22);touch-action:none}
+.color-swatch{width:24px;height:24px;border-radius:50%;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.2);cursor:pointer}
+.color-swatch.active{transform:scale(1.12);border-color:#666}
+
+/* Terminal */
+.terminal{background:rgba(5,20,40,.88);color:#66ff66;font-family:Consolas,monospace;font-size:14px;height:100%;display:flex;flex-direction:column}
+.term-history{flex:1;overflow:auto;padding:12px}
+.term-input-line{display:flex;align-items:center;gap:6px;padding:8px 12px;border-top:1px solid rgba(255,255,255,.15)}
+.term-input-line .prompt{color:#80ffea}
+.term-input{flex:1;background:transparent;border:none;color:#fff;outline:none;font:inherit}
+
+/* Music player */
+.music{display:flex;flex-direction:column;height:100%;background:linear-gradient(135deg,#1a1a2e,#16213e)}
+.music-visual{flex:1;display:flex;align-items:flex-end;justify-content:center;gap:3px;padding:20px;background:rgba(0,0,0,.2)}
+.music-bar{width:8px;background:linear-gradient(to top,var(--accent-strong),var(--accent));border-radius:4px 4px 0 0;height:20px}
+.music-ctrl{background:rgba(0,0,0,.5);padding:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;color:#fff}
+.music-ctrl input[type="text"]{flex:1;min-width:220px;border-radius:10px;border:1px solid rgba(255,255,255,.5);padding:6px 10px;background:rgba(255,255,255,.85);color:#123}
+.music-ctrl .file{background:#fff;color:#123;border-radius:10px;padding:6px 10px}
+.music-ctrl button{border-radius:18px;padding:6px 14px;background:var(--accent-strong);color:#fff;font-weight:800}
+.music-ctrl input[type="range"]{width:160px}
+
+/* Notifications */
+#notifications{position:fixed;right:16px;bottom:calc(var(--taskbar-h) + 14px);width:320px;display:flex;flex-direction:column-reverse;gap:10px;z-index:9500}
+.notification{background:rgba(255,255,255,.96);padding:12px 14px;border-radius:12px;border-left:4px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.2);backdrop-filter:blur(10px);cursor:pointer}
+.notification.info{border-left-color:#00c3ff}
+.notification.success{border-left-color:#2ed573}
+.notification.warn{border-left-color:#ffa502}
+.notification.error{border-left-color:#ff6b6b}
+.notification .title{font-weight:800;color:#007bbf;margin-bottom:4px}
+.notification .body{font-size:13px;color:#444}
+@keyframes slideInRight{from{transform:translateX(340px);opacity:0}to{transform:translateX(0);opacity:1}}
+.notification.animIn{animation:slideInRight .35s ease-out}
+.notification.hide{transition:.3s;opacity:0;transform:translateX(25px)}
+
+/* Bubbles (click to trigger notification) */
+.bubble{position:fixed;padding:10px 20px;background:radial-gradient(circle at 25% 25%,rgba(255,255,255,.95),rgba(200,240,255,.85));border:2px solid rgba(255,255,255,.9);border-radius:25px;color:#0077aa;font-weight:700;cursor:pointer;z-index:8999;box-shadow:0 5px 20px rgba(0,150,255,.3),inset 0 0 15px rgba(255,255,255,.5);animation:bubbleFloat 8s ease-in-out forwards}
+@keyframes bubbleFloat{0%{transform:translateY(100vh) scale(.8);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-160px) translateX(40px) scale(1.05);opacity:0}}
+.bubble::before{content:"";position:absolute;top:6px;left:10px;width:10px;height:10px;background:#fff;border-radius:50%;opacity:.9}
+
+/* Boot + Login */
+#boot{position:fixed;inset:0;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;z-index:9999;transition:opacity .5s}
+#boot .logo{font-size:80px;font-weight:900;text-shadow:0 0 40px rgba(255,255,255,.8),0 5px 10px rgba(0,0,0,.3);animation:pulse 2s ease-in-out infinite}
+#boot .hello{margin-top:8px;font-weight:800}
+#boot .bar{width:300px;height:6px;background:rgba(255,255,255,.3);border-radius:10px;margin-top:18px;overflow:hidden}
+#boot .prog{height:100%;background:linear-gradient(90deg,var(--accent),var(--pink));width:0%;animation:load 2s ease-out forwards;box-shadow:0 0 20px var(--accent)}
+@keyframes pulse{0%,100%{transform:translateZ(0);filter:brightness(1)}50%{filter:brightness(1.15)}}
+@keyframes load{from{width:0%}to{width:100%}}
+#login{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9998}
+#login .card{min-width:320px;max-width:360px;padding:18px;background:rgba(255,255,255,.25);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.66);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+#login .card h3{margin:6px 0 10px 0}
+#login .card input{width:100%;padding:10px;border-radius:12px;border:1px solid rgba(0,0,0,.22);background:rgba(255,255,255,.95);margin:6px 0}
+#login .card button{width:100%;padding:10px;border-radius:14px;background:linear-gradient(180deg,#74f2ce,#00c3ff);color:#fff;border:none;font-weight:900}
+
+/* Settings */
+.settings{padding:16px;display:flex;flex-direction:column;gap:16px}
+.set-group{background:rgba(255,255,255,.7);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.85)}
+.set-group label{display:block;font-weight:800;color:#005580;margin-bottom:8px}
+.set-group input[type="text"],.set-group input[type="password"],.set-group select, .set-group textarea{width:100%;padding:8px 12px;border-radius:10px;border:1px solid rgba(0,0,0,.2);background:rgba(255,255,255,.95)}
+.bg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:8px}
+.bg-item{height:70px;border-radius:10px;overflow:hidden;border:2px solid rgba(255,255,255,.8);cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+.bg-item img{width:100%;height:100%;object-fit:cover}
+.bg-item .grad{width:100%;height:100%}
+.small{font-size:12px;color:#666;margin-top:6px}
+
+/* Calculator */
+.calc{display:flex;flex-direction:column;height:100%;}
+.calc-screen{background:rgba(0,0,0,.65);color:#0ff;font-weight:700;font-family:Consolas,monospace;padding:14px;font-size:22px;text-align:right}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px;background:rgba(240,244,255,.85)}
+.calc-grid button{padding:10px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:linear-gradient(180deg,#fff,#eaeaea);font-size:16px;font-weight:800}
+.calc-grid button.op{background:linear-gradient(180deg,#c9f7ff,#8ae9ff)}
+.calc-grid button.eq{background:linear-gradient(180deg,#a0ffd6,#74f2ce)}
+
+/* Image Viewer */
+.viewer{display:flex;flex-direction:column;height:100%}
+.viewer-toolbar{display:flex;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid rgba(180,200,230,.55);background:rgba(240,244,255,.85)}
+.viewer-canvas{flex:1;display:flex;align-items:center;justify-content:center;background:rgba(230,240,250,.6)}
+.viewer-canvas img{max-width:95%;max-height:90%;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.22)}
+
+/* InStore */
+.store{display:flex;flex-direction:column;height:100%}
+.store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;padding:12px}
+.store-card{background:rgba(255,255,255,.85);border-radius:12px;border:1px solid rgba(0,0,0,.12);box-shadow:0 8px 20px rgba(0,0,0,.12);padding:12px}
+.store-card h4{margin:6px 0}
+.store-card button{border-radius:12px;padding:6px 12px;background:linear-gradient(180deg,#74f2ce,#00c3ff);color:#fff;border:none;font-weight:800}
+
+/* Periodic Table */
+.pt{display:flex;flex-direction:column;height:100%}
+.pt-grid{flex:1;display:grid;grid-template-columns:repeat(18,1fr);grid-auto-rows:minmax(52px,1fr);gap:6px;padding:12px;background:rgba(230,240,250,.6)}
+.elem{position:relative;background:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.85);border-radius:10px;box-shadow:0 6px 16px rgba(0,0,0,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px;cursor:pointer}
+.elem .Z{position:absolute;left:6px;top:4px;font-size:11px;color:#357}
+.elem .sym{font-size:18px;font-weight:900;color:#024}
+.elem .name{font-size:10px;color:#246}
+.elem:hover{outline:2px solid var(--accent)}
+.pt-legend{padding:8px 12px;background:rgba(255,255,255,.7);border-top:1px solid rgba(180,200,230,.55)}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;margin-right:6px;font-size:12px}
+.badge.s{background:#d1f7c4}
+.badge.p{background:#c4e3f7}
+.badge.d{background:#f7eac4}
+.badge.f{background:#f7c4ea}
+
+/* InCom (My Computer) */
+.incom{display:flex;flex-direction:column;height:100%}
+.incom-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;padding:12px}
+.incom-card{background:rgba(255,255,255,.9);border-radius:12px;border:1px solid rgba(0,0,0,.12);padding:12px;box-shadow:0 8px 20px rgba(0,0,0,.12)}
+.incom-bar{height:10px;background:#e6efff;border-radius:8px;overflow:hidden;margin-top:8px}
+.incom-bar>div{height:100%;background:linear-gradient(90deg,#00c3ff,#80ffea)}
+
+/* Mausoleum Sweeper */
+.ms{display:flex;flex-direction:column;height:100%}
+.ms-top{display:flex;gap:12px;align-items:center;padding:8px 10px;border-bottom:1px solid rgba(180,200,230,.55);background:rgba(240,244,255,.85)}
+.ms-grid{flex:1;display:grid;grid-template-columns:repeat(10,32px);grid-auto-rows:32px;gap:4px;padding:12px;justify-content:center;align-content:center;background:rgba(230,240,250,.6)}
+.ms-cell{display:flex;align-items:center;justify-content:center;border-radius:6px;background:linear-gradient(180deg,#fff,#eaeaea);border:1px solid rgba(0,0,0,.15);font-weight:800;color:#245;cursor:pointer;user-select:none}
+.ms-cell.revealed{background:linear-gradient(180deg,#eef9ff,#dff3ff);border-color:#bcd}
+.ms-cell.flag{background:linear-gradient(180deg,#ffe6f0,#ffd3e6);color:#d33}
+
+/* Stickers */
+.sticker{position:fixed;padding:8px 12px;border-radius:16px;background:rgba(255,255,255,.95);border:2px solid rgba(255,255,255,.8);box-shadow:0 6px 18px rgba(0,0,0,.2);z-index:9600;cursor:pointer}
+
+/* Context menu */
+.ctx-menu{position:fixed;z-index:9700;background:rgba(255,255,255,.97);backdrop-filter:blur(10px);border:1px solid rgba(0,0,0,.1);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.2);display:none;min-width:180px;overflow:hidden}
+.ctx-item{padding:8px 14px;cursor:pointer;font-weight:700;color:#234}
+.ctx-item:hover{background:#eef9ff;color:#0073b1}
+.ctx-hr{height:1px;background:rgba(0,0,0,.08);margin:4px 0}
+
+/* Power overlay (shutdown animation) */
+#shutdown{position:fixed;inset:0;background:radial-gradient(circle at 50% 40%, #223a6a 0%, #0a1830 60%, #000 100%);color:#dff6ff;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:10000;opacity:0}
+#shutdown.show{display:flex;animation:shutFade .45s ease forwards}
+@keyframes shutFade{from{opacity:0}to{opacity:1}}
+#shut-content{display:flex;flex-direction:column;align-items:center;gap:16px}
+.shut-logo{font-size:48px;font-weight:900;text-shadow:0 0 30px rgba(0,200,255,.5)}
+.spinner{width:48px;height:48px;border-radius:50%;border:5px solid rgba(255,255,255,.25);border-top-color:#00c3ff;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.shut-text{opacity:.9}
+#power-on{padding:10px 18px;border-radius:22px;background:linear-gradient(180deg,#74f2ce,#00c3ff);color:#fff;border:none;font-weight:900;display:none}
+
+/* Language helper */
+[data-i18n]{transition:color .1s}
+</style>
+</head>
+<body>
+<!-- Boot -->
+<div id="boot">
+  <div class="logo">JunoOS</div>
+  <div class="hello">Kjunno～(∠> ▽ < )⌒☆</div>
+  <div class="bar"><div class="prog"></div></div>
+</div>
+<!-- Login (visual only) -->
+<div id="login">
+  <div class="card glass glossy">
+    <h3>Welcome</h3>
+    <input id="login-user" type="text" placeholder="User" value="JunoOS User">
+    <input id="login-pass" type="password" placeholder="Password" value="">
+    <button id="login-btn">Sign in</button>
+    <div class="small" style="text-align:center;margin-top:8px">(｡•̀ᴗ-)✧</div>
+  </div>
+</div>
+
+<div id="desktop"></div>
+
+<!-- Context Menu -->
+<div id="ctx-menu" class="ctx-menu glass">
+  <div class="ctx-item" data-act="bubble">✨ 生成泡泡</div>
+  <div class="ctx-hr"></div>
+  <div class="ctx-item" data-act="settings">⚙️ 设置</div>
+  <div class="ctx-item" data-act="refresh">🔄 刷新</div>
+  <div class="ctx-item" data-act="restart">⭮ 重启</div>
+</div>
+
+<!-- Start menu -->
+<div id="start-menu" class="glass glossy">
+  <div class="start-header"><div class="user-avatar">J</div><div id="start-username">JunoOS User</div></div>
+  <div id="start-list"></div>
+  <div class="start-footer">
+    <button id="btn-restart">🔄 <span data-i18n="start.restart">Restart</span></button>
+    <button id="btn-shutdown" style="color:#d33">🔴 <span data-i18n="start.shutdown">Shutdown</span></button>
+  </div>
+</div>
+
+<!-- Taskbar -->
+<div id="taskbar">
+  <div id="start-btn" class="glossy">Kjunno～☆</div>
+  <div id="task-apps"></div>
+  <div id="sys-tray"><span id="battery">🔋 100%</span><span id="network">📶 Connected</span><span id="clock">12:00</span></div>
+</div>
+
+<!-- Notifications container -->
+<div id="notifications"></div>
+
+<!-- Shutdown overlay -->
+<div id="shutdown">
+  <div id="shut-content">
+    <div class="shut-logo">JunoOS</div>
+    <div class="spinner"></div>
+    <div class="shut-text">正在关机 / Shutting down…</div>
+  </div>
+  <button id="power-on">▶ Power</button>
+</div>
+
+<!-- Templates -->
+<template id="tpl-inchat">
+  <div class="chat-container">
+    <div class="chat-toolbar">
+      <label><input type="checkbox" id="ai-toggle" checked> <span data-i18n="chat.ai">AI Mode</span></label>
+      <span class="small" data-i18n="chat.hint">Turn off to use Answer Book style replies.</span>
+    </div>
+    <div class="chat-log" id="chat-log"></div>
+    <div class="chat-input"><input id="chat-input" type="text" autocomplete="off" placeholder="Type here..."><button id="chat-send" data-i18n="chat.send">Send</button></div>
+  </div>
+</template>
+
+<template id="tpl-browser">
+  <div style="display:flex;flex-direction:column;height:100%">
+    <div class="app-toolbar"><button id="browser-go" data-i18n="browser.go">Go</button><input id="browser-url" type="text" value="https://www.bing.com/search?q=Frutiger+Aero" style="flex:1;border-radius:12px;border:1px solid rgba(0,0,0,.18);padding:6px 10px"></div>
+    <iframe id="browser-frame" src="https://www.bing.com/search?q=Frutiger+Aero" style="flex:1;border:none;background:#fff"></iframe>
+  </div>
+</template>
+
+<template id="tpl-note">
+  <div style="height:100%">
+    <div class="app-toolbar"><button id="note-save">💾 <span data-i18n="note.save">Save .txt</span></button></div>
+    <textarea id="note-area" spellcheck="false"></textarea>
+  </div>
+</template>
+
+<template id="tpl-inpaint">
+  <div style="display:flex;flex-direction:column;height:100%">
+    <div class="app-toolbar">
+      <span style="font-weight:700;color:#224" data-i18n="paint.color">Color:</span>
+      <div class="color-swatch active" style="background:#000" data-color="#000000"></div>
+      <div class="color-swatch" style="background:#ff4757" data-color="#ff4757"></div>
+      <div class="color-swatch" style="background:#e84393" data-color="#e84393"></div>
+      <div class="color-swatch" style="background:#fd79a8" data-color="#fd79a8"></div>
+      <div class="color-swatch" style="background:#2ed573" data-color="#2ed573"></div>
+      <div class="color-swatch" style="background:#1e90ff" data-color="#1e90ff"></div>
+      <div class="color-swatch" style="background:#ffeaa7" data-color="#ffeaa7"></div>
+      <div class="color-swatch" style="background:#6c5ce7" data-color="#6c5ce7"></div>
+      <div style="width:1px;height:22px;background:rgba(0,0,0,.15);margin:0 8px"></div>
+      <button id="paint-save">🖼️ <span data-i18n="paint.save">Save PNG</span></button>
+      <button id="paint-clear">🗑️ <span data-i18n="paint.clear">Clear</span></button>
+    </div>
+    <div class="paint-workspace"><canvas id="paint-canvas" width="740" height="460"></canvas></div>
+  </div>
+</template>
+
+<template id="tpl-terminal">
+  <div class="terminal">
+    <div class="term-history"></div>
+    <div class="term-input-line"><span class="prompt">JunoOS ›</span><input class="term-input" autocomplete="off" spellcheck="false"></div>
+  </div>
+</template>
+
+<template id="tpl-music">
+  <div class="music">
+    <div class="music-visual" id="music-visual"></div>
+    <div class="music-ctrl">
+      <button id="music-play">▶</button>
+      <button id="music-pause">⏸</button>
+      <label><span data-i18n="music.volume">Vol</span> <input id="music-vol" type="range" min="0" max="1" step="0.01" value="0.8"></label>
+      <input id="music-url" type="text" placeholder="https://...mp3" />
+      <button id="music-load-url" data-i18n="music.loadUrl">Load URL</button>
+      <label class="file"><input id="music-file" type="file" accept="audio/*" style="display:none">📁 <span data-i18n="music.pickFile">Pick file</span></label>
+      <span id="music-info" style="margin-left:auto"></span>
+      <audio id="audio" crossorigin="anonymous"></audio>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-settings">
+  <div class="settings">
+    <div class="set-group">
+      <label data-i18n="set.api">🧠 Gemini API Key</label>
+      <input type="password" id="api-key" placeholder="AIza...">
+      <button id="api-save" style="margin-top:8px" class="glass">💾 <span data-i18n="common.save">Save</span></button>
+      <div class="small" data-i18n="set.apiHint">Stored locally in your browser.</div>
+    </div>
+    <div class="set-group">
+      <label data-i18n="set.lang">🌐 Language</label>
+      <select id="lang">
+        <option value="zh-CN">简体中文</option>
+        <option value="en">English</option>
+        <option value="ja">日本語</option>
+      </select>
+    </div>
+    <div class="set-group">
+      <label data-i18n="set.bg">🖼️ Desktop Background</label>
+      <input type="text" id="bg-url" placeholder="Image URL (https://...)" />
+      <button id="bg-apply" class="glass" style="margin-top:6px"><span data-i18n="set.applyUrl">Apply URL</span></button>
+      <div class="small" data-i18n="set.or">or</div>
+      <label class="glass" style="padding:6px 10px;border-radius:10px;display:inline-block">📁 <span data-i18n="set.pickImg">Pick image</span><input id="bg-file" type="file" accept="image/*" style="display:none"></label>
+      <div class="small" data-i18n="set.presets">Presets:</div>
+      <div class="bg-grid" id="bg-grid"></div>
+    </div>
+    <div class="set-group">
+      <label>📒 Answer Book</label>
+      <textarea id="answer-book" rows="5" placeholder="每行一条自定义短句（将与内置语句合并）"></textarea>
+      <div class="small">(ゝ∀･) 支持 Juno 口癖与颜文字～</div>
+      <button id="save-book" class="glass" style="margin-top:6px">💾 <span data-i18n="common.save">Save</span></button>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-calc">
+  <div class="calc">
+    <div class="calc-screen" id="calc-screen">0</div>
+    <div class="calc-grid">
+      <button data-k="C" class="op">C</button>
+      <button data-k="(">(</button>
+      <button data-k=")">)</button>
+      <button data-k="/" class="op">÷</button>
+      <button data-k="7">7</button>
+      <button data-k="8">8</button>
+      <button data-k="9">9</button>
+      <button data-k="*" class="op">×</button>
+      <button data-k="4">4</button>
+      <button data-k="5">5</button>
+      <button data-k="6">6</button>
+      <button data-k="-" class="op">−</button>
+      <button data-k="1">1</button>
+      <button data-k="2">2</button>
+      <button data-k="3">3</button>
+      <button data-k="+" class="op">＋</button>
+      <button data-k="0" style="grid-column: span 2">0</button>
+      <button data-k=".">.</button>
+      <button data-k="=" class="eq">＝</button>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-viewer">
+  <div class="viewer">
+    <div class="viewer-toolbar">
+      <input id="view-url" type="text" placeholder="https://...jpg" style="flex:1;border-radius:12px;border:1px solid rgba(0,0,0,.18);padding:6px 10px">
+      <button id="view-load">Load URL</button>
+      <label class="glass" style="padding:6px 10px;border-radius:10px;display:inline-block">📁 Pick file<input id="view-file" type="file" accept="image/*" style="display:none"></label>
+      <label>Zoom <input id="view-zoom" type="range" min="0.5" max="2" step="0.1" value="1"></label>
+    </div>
+    <div class="viewer-canvas"><img id="view-img" src="" alt=""></div>
+  </div>
+</template>
+
+<template id="tpl-store">
+  <div class="store">
+    <div class="app-toolbar"><strong>InStore</strong><span class="small">www 发现更多好玩的小应用</span></div>
+    <div class="store-grid" id="store-grid"></div>
+  </div>
+</template>
+
+<template id="tpl-ptable">
+  <div class="pt">
+    <div class="app-toolbar"><strong>Periodic Table</strong><span class="small">(Frutiger Aero)</span></div>
+    <div class="pt-grid" id="pt-grid"></div>
+    <div class="pt-legend">
+      <span class="badge s">s-block</span>
+      <span class="badge p">p-block</span>
+      <span class="badge d">d-block</span>
+      <span class="badge f">f-block</span>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-incom">
+  <div class="incom">
+    <div class="app-toolbar"><strong>InCom</strong><span class="small">模拟分区与存储（单位：BB）</span></div>
+    <div class="incom-grid" id="incom-grid"></div>
+  </div>
+</template>
+
+<template id="tpl-mausoleum">
+  <div class="ms">
+    <div class="ms-top"><strong>MausoleumSweeper</strong><span class="small">左键：唤醒“哲学僵尸”(Phombie)，右键：标记“元变量”(M-Variable)</span><span id="ms-remaining" style="margin-left:auto"></span><button id="ms-restart">Restart</button></div>
+    <div class="ms-grid" id="ms-grid"></div>
+  </div>
+</template>
+
+<script>
+// ===== i18n =====
+const I18N = {
+  'zh-CN':{
+    'app.inchat':'InChat','app.browser':'浏览器','app.note':'记事本','app.inpaint':'InPaint','app.terminal':'终端','app.music':'音乐','app.settings':'设置','app.calc':'计算器','app.viewer':'图片查看器','app.store':'InStore','app.ptable':'元素周期表','app.incom':'InCom',
+    'start.restart':'重启','start.shutdown':'关机',
+    'chat.ai':'AI模式','chat.hint':'关闭后使用“答案之书”风格随机回复','chat.send':'发送',
+    'browser.go':'前往',
+    'note.save':'保存为 .txt',
+    'paint.color':'颜色','paint.save':'保存PNG','paint.clear':'清空',
+    'music.volume':'音量','music.loadUrl':'加载URL','music.pickFile':'选择文件',
+    'set.api':'🧠 Gemini API Key','common.save':'保存','set.apiHint':'仅保存在浏览器本地。',
+    'set.lang':'🌐 语言','set.bg':'🖼️ 桌面背景','set.applyUrl':'应用URL','set.or':'或','set.pickImg':'选择图片','set.presets':'预设：'
+  },
+  'en':{
+    'app.inchat':'InChat','app.browser':'Browser','app.note':'Juno Note','app.inpaint':'InPaint','app.terminal':'Terminal','app.music':'Music','app.settings':'Settings','app.calc':'Calculator','app.viewer':'Image Viewer','app.store':'InStore','app.ptable':'Periodic Table','app.incom':'InCom',
+    'start.restart':'Restart','start.shutdown':'Shutdown',
+    'chat.ai':'AI Mode','chat.hint':'Turn off to use Answer Book random replies','chat.send':'Send',
+    'browser.go':'Go',
+    'note.save':'Save .txt',
+    'paint.color':'Color','paint.save':'Save PNG','paint.clear':'Clear',
+    'music.volume':'Vol','music.loadUrl':'Load URL','music.pickFile':'Pick file',
+    'set.api':'🧠 Gemini API Key','common.save':'Save','set.apiHint':'Stored locally in your browser.',
+    'set.lang':'🌐 Language','set.bg':'🖼️ Desktop Background','set.applyUrl':'Apply URL','set.or':'or','set.pickImg':'Pick image','set.presets':'Presets:'
+  },
+  'ja':{
+    'app.inchat':'インチャット','app.browser':'ブラウザ','app.note':'メモ','app.inpaint':'インペイント','app.terminal':'ターミナル','app.music':'ミュージック','app.settings':'設定','app.calc':'電卓','app.viewer':'画像ビューア','app.store':'インストア','app.ptable':'元素周期表','app.incom':'インコム',
+    'start.restart':'再起動','start.shutdown':'シャットダウン',
+    'chat.ai':'AIモード','chat.hint':'オフにすると「答えの書」風のランダム返信','chat.send':'送信',
+    'browser.go':'移動',
+    'note.save':'.txt で保存',
+    'paint.color':'色','paint.save':'PNG を保存','paint.clear':'クリア',
+    'music.volume':'音量','music.loadUrl':'URL を読み込み','music.pickFile':'ファイル選択',
+    'set.api':'🧠 Gemini API キー','common.save':'保存','set.apiHint':'ブラウザにローカル保存されます。',
+    'set.lang':'🌐 言語','set.bg':'🖼️ デスクトップ背景','set.applyUrl':'URL を適用','set.or':'または','set.pickImg':'画像を選択','set.presets':'プリセット：'
+  }
+};
+let currentLang = localStorage.getItem('juno.lang') || 'zh-CN';
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    const txt = (I18N[currentLang]||{})[key];
+    if(txt) el.textContent = txt;
+  });
+}
+
+// ===== Boot -> Login (robust) =====
+function finishBoot(){
+  const boot=document.getElementById('boot');
+  if(!boot||boot.dataset.done==='1') return;
+  boot.dataset.done='1';
+  boot.style.opacity=0;
+  setTimeout(()=>{
+    if(boot) boot.style.display='none';
+    const login=document.getElementById('login');
+    if(login) login.style.display='flex';
+  },400);
+}
+(function(){
+  const prog=document.querySelector('#boot .prog');
+  if(prog){ prog.addEventListener('animationend', finishBoot); }
+  setTimeout(finishBoot, 3500); // fallback
+  const boot=document.getElementById('boot');
+  if(boot){ boot.addEventListener('click', finishBoot); }
+})();
+window.addEventListener('error', ()=>{ try{ notify('JunoOS','(｡•́︿•̀｡) 小故障已被捕获，继续启动…','warn',2600);}catch(_){} finishBoot(); });
+
+const loginBtn=document.getElementById('login-btn');
+loginBtn.onclick=()=>{
+  document.getElementById('login').style.display='none';
+  welcome();
+};
+function welcome(){ notify('JunoOS','Kjunno～(∠> ▽ < )⌒☆ 欢迎回来～','success',5200); }
+
+// ===== Start menu & icons =====
+const startBtn = document.getElementById('start-btn');
+const startMenu = document.getElementById('start-menu');
+startBtn.addEventListener('click',()=>{startMenu.style.display = (startMenu.style.display==='flex')?'none':'flex'});
+window.addEventListener('click',e=>{if(!startMenu.contains(e.target)&&e.target!==startBtn) startMenu.style.display='none'});
+
+// Apps list
+const APPS = [
+  {id:'incom',labelKey:'app.incom',icon:'🖥️'},
+  {id:'inchat',labelKey:'app.inchat',icon:'💬'},
+  {id:'browser',labelKey:'app.browser',icon:'🌐'},
+  {id:'note',labelKey:'app.note',icon:'📝'},
+  {id:'inpaint',labelKey:'app.inpaint',icon:'🎨'},
+  {id:'terminal',labelKey:'app.terminal',icon:'💻'},
+  {id:'music',labelKey:'app.music',icon:'🎵'},
+  {id:'calc',labelKey:'app.calc',icon:'🧮'},
+  {id:'viewer',labelKey:'app.viewer',icon:'🖼️'},
+  {id:'store',labelKey:'app.store',icon:'🏪'},
+  {id:'ptable',labelKey:'app.ptable',icon:'🧪'},
+  {id:'settings',labelKey:'app.settings',icon:'⚙️'}
+];
+const startList = document.getElementById('start-list');
+function renderStart(){
+  startList.innerHTML='';
+  APPS.forEach(a=>{
+    const it = document.createElement('div'); it.className='start-item';
+    it.innerHTML = `<span class="emoji">${a.icon}</span><span data-i18n="${a.labelKey}"></span>`;
+    it.onclick=()=>openApp(a.id);
+    startList.appendChild(it);
+  });
+  applyI18n();
+}
+renderStart();
+
+// Desktop icons: columns (6 per col) + draggable + persistent
+const desktop=document.getElementById('desktop');
+function renderDesktop(){
+  desktop.innerHTML='';
+  const saved=JSON.parse(localStorage.getItem('juno.icons')||'{}');
+  const maxRows=6, colW=110; let row=0, col=0; const startLeft=16, startTop=16, stepY=96;
+  APPS.forEach((a)=>{
+    const ic=document.createElement('div'); ic.className='icon'; ic.dataset.app=a.id;
+    ic.innerHTML=`<div class="icon-img glossy">${a.icon}</div><div data-i18n="${a.labelKey}"></div>`;
+    const pos=saved[a.id];
+    if(pos){ ic.style.left=pos.left; ic.style.top=pos.top; }
+    else{
+      ic.style.left=(startLeft + col*colW)+'px';
+      ic.style.top=(startTop + row*stepY)+'px';
+      row++; if(row>=maxRows){ row=0; col++; }
+    }
+    desktop.appendChild(ic);
+    ic.addEventListener('dblclick',(ev)=>{ openApp(a.id); stickerAt('(ゝ∀･)', ev.clientX, ev.clientY); });
+    makeDraggable(ic,a.id);
+  });
+  applyI18n();
+}
+function makeDraggable(el,id){
+  let dx=0,dy=0,drag=false;
+  el.addEventListener('mousedown',e=>{drag=true;dx=e.clientX-el.offsetLeft;dy=e.clientY-el.offsetTop; bringFrontFocus();});
+  window.addEventListener('mousemove',e=>{ if(!drag) return; el.style.left=(e.clientX-dx)+'px'; el.style.top=(e.clientY-dy)+'px'; });
+  window.addEventListener('mouseup',()=>{ if(!drag) return; drag=false; persistIconPos(id,el.style.left,el.style.top); });
+}
+function persistIconPos(id,left,top){ const saved=JSON.parse(localStorage.getItem('juno.icons')||'{}'); saved[id]={left,top}; localStorage.setItem('juno.icons',JSON.stringify(saved)); }
+renderDesktop();
+
+// ===== Window manager =====
+const taskApps = document.getElementById('task-apps');
+let zTop = 10; let winIdSeq = 1; const windows = new Map();
+function createWindow(title, icon, contentEl){
+  const id = 'win'+(winIdSeq++);
+  const w = document.createElement('div'); w.className='window glass glossy'; w.style.left=Math.random()*200+60+'px'; w.style.top=Math.random()*120+60+'px'; w.style.width='700px'; w.style.height='480px'; w.dataset.id=id;
+  w.innerHTML = `<div class="win-header"><span class="win-icon">${icon}</span><div class="win-title"></div><div class="win-controls"><div class="win-btn min-btn">—</div><div class="win-btn max-btn">▢</div><div class="win-btn close-btn">✕</div></div></div><div class="win-content"></div>`;
+  w.querySelector('.win-title').textContent = title;
+  w.querySelector('.win-content').appendChild(contentEl);
+  document.body.appendChild(w);
+  bringFront(w);
+  const header=w.querySelector('.win-header'); let offX=0,offY=0,drag=false;
+  header.addEventListener('mousedown',e=>{drag=true;offX=e.clientX - w.offsetLeft;offY=e.clientY - w.offsetTop;header.style.cursor='grabbing';bringFront(w)});
+  window.addEventListener('mousemove',e=>{if(!drag) return; w.style.left=(e.clientX-offX)+'px'; w.style.top=(e.clientY-offY)+'px'});
+  window.addEventListener('mouseup',()=>{drag=false;header.style.cursor='grab'});
+  const task = document.createElement('div'); task.className='task-entry'; task.dataset.id=id; task.innerHTML=`<span class="emoji-icon">${icon}</span><span class="task-title">${title}</span>`; task.onclick=()=>{if(w.style.display==='none'){w.style.display=''; bringFront(w);} else {bringFront(w);}}; taskApps.appendChild(task);
+  w.addEventListener('mousedown',()=>bringFront(w));
+  w.querySelector('.min-btn').onclick=()=>{w.style.display='none'};
+  w.querySelector('.max-btn').onclick=()=>{w.classList.toggle('maximized')};
+  w.querySelector('.close-btn').onclick=()=>{w.remove(); task.remove(); windows.delete(id)};
+  windows.set(id,{w,task});
+  junoMood();
+  return w;
+}
+function bringFront(w){zTop+=2; w.style.zIndex=zTop; document.querySelectorAll('.task-entry').forEach(t=>t.classList.remove('active')); const id=w.dataset.id; const rec=windows.get(id); if(rec) rec.task.classList.add('active');}
+function bringFrontFocus(){ zTop+=1; }
+
+// ===== Context menu =====
+const ctxMenu = document.getElementById('ctx-menu');
+function showCtx(x,y){ ctxMenu.style.left=x+'px'; ctxMenu.style.top=y+'px'; ctxMenu.style.display='block'; }
+function hideCtx(){ ctxMenu.style.display='none'; }
+['click','scroll','resize'].forEach(ev=>window.addEventListener(ev,hideCtx));
+document.addEventListener('contextmenu',e=>{ if((e.target.closest('#desktop')||e.target===document.body)){ e.preventDefault(); showCtx(e.clientX,e.clientY); }});
+ctxMenu.addEventListener('click',e=>{
+  const act = e.target.closest('.ctx-item')?.dataset.act; if(!act) return; hideCtx();
+  if(act==='bubble') spawnBubble();
+  if(act==='settings') openSettings();
+  if(act==='refresh') renderDesktop();
+  if(act==='restart') location.reload();
+});
+
+// ===== Notifications =====
+function notify(title, body, style='info', timeout=4200){
+  const box=document.getElementById('notifications');
+  const n=document.createElement('div'); n.className='notification animIn '+style; n.innerHTML=`<div class="title">${title}</div><div class="body">${body}</div>`; box.appendChild(n);
+  let timer=setTimeout(()=>{n.classList.add('hide'); setTimeout(()=>n.remove(),300)}, timeout);
+  n.onclick=()=>{clearTimeout(timer); n.classList.add('hide'); setTimeout(()=>n.remove(),200)};
+}
+
+// ===== Juno phrases & Bubbles & Stickers =====
+const JUNO_PHRASES=[
+  'Kjunno～(∠> ▽ < )⌒☆',
+  'wwww',
+  '(｡•́︿•̀｡)',
+  '(⁄ ⁄>⁄ ▽ ⁄<⁄ ⁄)',
+  '(｡>﹏<｡)',
+  '(ゝ∀･)',
+  '(｡•̀ᴗ-)✧',
+  '(⁄ ⁄>⁄ △ ⁄<⁄ ⁄)',
+  'QAQ', 'qwq',
+  '> <'
+];
+function randomJuno(){ return JUNO_PHRASES[Math.floor(Math.random()*JUNO_PHRASES.length)]; }
+function spawnBubble(){
+  const b=document.createElement('div'); b.className='bubble'; b.textContent=randomJuno();
+  const x=Math.random()*(window.innerWidth-200)+40; const y=window.innerHeight-40; b.style.left=x+'px'; b.style.top=y+'px';
+  b.onclick=()=>{notify('Juno', randomJuno()); maybePokeChat(randomJuno()); b.remove();};
+  document.body.appendChild(b);
+  setTimeout(()=>b.remove(),8200);
+}
+setInterval(()=>{ if(Math.random()<0.35) spawnBubble(); }, 6500);
+function maybePokeChat(text){ const chat = document.querySelector('.window .chat-log'); if(chat){ const m=document.createElement('div'); m.className='msg juno'; m.textContent=text; chat.appendChild(m); chat.scrollTop=chat.scrollHeight; }}
+function stickerAt(text,x=null,y=null){
+  const s=document.createElement('div'); s.className='sticker'; s.textContent=text;
+  const cx = (x!==null? x : window.innerWidth/2);
+  const cy = (y!==null? y : window.innerHeight/2);
+  s.style.left=cx+'px'; s.style.top=cy+'px';
+  s.onclick=()=>s.remove(); document.body.appendChild(s); setTimeout(()=>s.remove(),3500);
+  return s;
+}
+function junoMood(){ if(Math.random()<0.6) notify('Juno', randomJuno(), ['info','success','warn'][Math.floor(Math.random()*3)], 3000); }
+
+// ===== InChat =====
+let CUSTOM_BOOK = (localStorage.getItem('juno.book')||'').split('\n').map(s=>s.trim()).filter(Boolean);
+
+const DEFAULT_BOOK = [
+  'Kjunno～(∠> ▽ < )⌒☆ やっほ～！今日は何から始める？',
+  'www それは運命のコイン…表？裏？（ぴょこ）',
+  '收到！(ゝ∀･) 这个问题我已经用铅笔圈起来啦～',
+  '(⁄ ⁄>⁄ ▽ ⁄<⁄ ⁄) 诶嘿…我觉得可以试试反着想！',
+  '(｡•́︿•̀｡) 咦…连接有点慢？要不先喝口水再试试～',
+  '星标提示：把复杂问题拆成三块，小步快跑！',
+  '备忘：Ctrl + S！先保存！然后我们继续冲～',
+  '好耶！今天也是Frutiger Aero的一天 ✨',
+  '(｡•̀ᴗ-)✧ 你已经很棒啦～',
+  'QAQ 失败也是经验值 +1！',
+  //
+  'Juno 观测到了！这是一个绝佳的机会！(ゝ∀･)',
+  '数据正在重新校准... 晚点再看吧？ > <',
+  '(｡•́︿•̀｡) 这个... 好像... 叙事基底不太支持呢...',
+  '当然！就像 1+1=2 一样确定！wwww',
+  '诶诶诶？(⁄ ⁄>⁄ ▽ ⁄<⁄ ⁄) 为什么... 要问 Juno 这么害羞的问题！',
+  'QAQ 警告：侦测到“无趣”的数据波动！',
+  '这个“愿望”已经被 InStore 标记为“热门”啦！(｡•̀ᴗ-)✧',
+  '（Juno 正在加载... 404 Not Found...）开玩笑的啦 www',
+  '系统权限不足... (｡>﹏<｡) 换个方式试试？',
+  'Kjunno～☆ 所有的灯都为你变绿了！',
+  '这是一个... “元变量” 级别的决定哦！要慎重！',
+  '不要“点”那个！(｡•́︿•̀｡) 那个是“元变量”哦！',
+  '就像 Frutiger Aero 一样... 清爽、明亮、充满希望！✨',
+  'Juno 的 CPU 好像有点过热了... (⁄ ⁄>⁄ △ ⁄<⁄ ⁄)',
+  '这个“叙事”... 好像会导致“物理清理”哦... qwq',
+  '满分！(ゝ∀･) 就这么做！',
+  '你需要一个“元素信物”... 也许？',
+  '（Juno 假装掉线了）> <',
+  '这个想法... 真是“有趣的数据”！Juno 喜欢！wwww',
+  '正在“扫墓”... 别打扰 Juno (｡•̀ᴗ-)✧',
+  '“哲学僵尸” (Phombie) 可能会不同意哦... (｡•́︿•̀｡)',
+  'Kjunno～☆ 你的“许愿”已被受理！',
+  '这个... 超出了“陵墓”的边界... qwq',
+  '不要啦 > < 会“叙事崩塌”的！',
+  '安心啦 (｡•̀ᴗ-)✧ Juno 会在“基底”支援你的！',
+  '（Juno 正在运行 InPaint... 试图修改这个概念...）',
+  '绝对不行！(｡>﹏<｡) 这是“无趣”的！',
+  '好呀好呀！就像泡泡一样轻盈～🫧',
+  '让 Juno 问问... 诶？“盖亚之声”没有回应...',
+  '你... 你是不是“点”到“元变量”了？！(｡>﹏<｡)',
+  'Kjunno～☆ 没问题！包在 Juno 身上！',
+  '（Juno 正在使用“概念橡皮擦”...）',
+  'Juno... Juno 拒绝观测这个数据... qwq',
+  '是！(ゝ∀･) 就像 InChat 一样可靠！',
+  '这个... 好像是“爱伊忒拿”的旧数据... wwww',
+  '（Juno 已经“物理清理”了这个问题）',
+  'Kjunno～☆ 这就是“命运之合”呀！',
+  '（Juno 正在查询“腹地”档案馆...）',
+  '不行哦 > < 会被“更高权限的现实锚定”修正的！',
+  'Juno 给你点亮了“指路星辰”！(｡•̀ᴗ-)✧'
+];
+function getBook(){ return DEFAULT_BOOK.concat(CUSTOM_BOOK); }
+function openInChat(){
+  const tpl=document.getElementById('tpl-inchat').content.cloneNode(true);
+  const win=createWindow(getText('app.inchat'),'💬',tpl);
+  const log=win.querySelector('#chat-log'); const input=win.querySelector('#chat-input'); const send=win.querySelector('#chat-send'); const toggle=win.querySelector('#ai-toggle');
+  toggle.checked = JSON.parse(localStorage.getItem('juno.inchat.ai')||'true');
+  toggle.onchange = ()=>{ localStorage.setItem('juno.inchat.ai', JSON.stringify(toggle.checked)); notify('InChat', toggle.checked? 'AI mode ON': 'AI mode OFF'); };
+  function pushMsg(text,who){ const m=document.createElement('div'); m.className='msg '+who; m.textContent=text; log.appendChild(m); log.scrollTop=log.scrollHeight; }
+  async function junoReply(q){
+    if(!toggle.checked) { const t= getBook()[Math.floor(Math.random()*getBook().length)]; pushMsg(t,'juno'); return; }
+    const key = localStorage.getItem('juno.apiKey');
+    if(!key){ pushMsg('（未设置API Key，已使用答案之书模式）www','juno'); const t=getBook()[Math.floor(Math.random()*getBook().length)]; pushMsg(t,'juno'); return; }
+    try{
+      const body = { contents:[{ role:'user', parts:[{text:q}] }] };
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${key}`;
+      const res = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '(｡•́︿•̀｡) 服务器打盹了…';
+      pushMsg(text.trim(),'juno');
+    }catch(e){ pushMsg('(｡•́︿•̀｡) 网络有点害羞…已切回答案之书','juno'); const t=getBook()[Math.floor(Math.random()*getBook().length)]; pushMsg(t,'juno'); }
+  }
+  function sendNow(){ const v=input.value.trim(); if(!v) return; pushMsg(v,'user'); input.value=''; junoReply(v); }
+  send.onclick=sendNow; input.addEventListener('keydown',e=>{if(e.key==='Enter') sendNow()});
+}
+
+// ===== Browser =====
+function openBrowser(){
+  const tpl=document.getElementById('tpl-browser').content.cloneNode(true);
+  const win=createWindow(getText('app.browser'),'🌐',tpl);
+  const url=win.querySelector('#browser-url'); const go=win.querySelector('#browser-go'); const frame=win.querySelector('#browser-frame');
+  function nav(){ frame.src=url.value; }
+  go.onclick=nav; url.addEventListener('keydown',e=>{if(e.key==='Enter') nav()});
+}
+
+// ===== Note =====
+function openNote(){
+  const tpl=document.getElementById('tpl-note').content.cloneNode(true);
+  const win=createWindow(getText('app.note'),'📝',tpl);
+  const ta=win.querySelector('#note-area'); const save=win.querySelector('#note-save');
+  save.onclick=()=>{ const blob=new Blob([ta.value||''],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='note.txt'; a.click(); URL.revokeObjectURL(a.href); notify('Juno Note','Saved note.txt','success'); };
+}
+
+// ===== InPaint =====
+function openInPaint(){
+  const tpl=document.getElementById('tpl-inpaint').content.cloneNode(true);
+  const win=createWindow(getText('app.inpaint'),'🎨',tpl);
+  const c=win.querySelector('#paint-canvas'); const ctx=c.getContext('2d'); let drawing=false,color='#000';
+  function pos(e){ const r=c.getBoundingClientRect(); const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left; const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top; return {x,y} }
+  function draw(e){ if(!drawing) return; const {x,y}=pos(e); ctx.lineTo(x,y); ctx.strokeStyle=color; ctx.lineWidth=3; ctx.lineCap='round'; ctx.stroke(); }
+  c.addEventListener('mousedown',e=>{drawing=true; ctx.beginPath(); const {x,y}=pos(e); ctx.moveTo(x,y)});
+  c.addEventListener('mousemove',draw); window.addEventListener('mouseup',()=>drawing=false);
+  c.addEventListener('touchstart',e=>{drawing=true; ctx.beginPath(); const {x,y}=pos(e); ctx.moveTo(x,y)}); c.addEventListener('touchmove',draw); window.addEventListener('touchend',()=>drawing=false);
+  win.querySelectorAll('.color-swatch').forEach(s=>s.onclick=()=>{win.querySelectorAll('.color-swatch').forEach(t=>t.classList.remove('active')); s.classList.add('active'); color=s.dataset.color});
+  win.querySelector('#paint-clear').onclick=()=>{ctx.clearRect(0,0,c.width,c.height); stickerAt('QAQ'); };
+  win.querySelector('#paint-save').onclick=()=>{const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download='canvas.png'; a.click(); notify('InPaint','Saved canvas.png','success');};
+}
+
+// ===== Terminal =====
+function openTerminal(){
+  const tpl=document.getElementById('tpl-terminal').content.cloneNode(true);
+  const win=createWindow(getText('app.terminal'),'💻',tpl);
+  const hist=win.querySelector('.term-history'); const input=win.querySelector('.term-input');
+  function println(t){ const d=document.createElement('div'); d.className='term-line'; d.textContent=t; hist.appendChild(d); hist.scrollTop=hist.scrollHeight; }
+  function help(){ println('Commands: help, echo <t>, date, lang, notify <msg>, bubbles, juno, color <#hex>, cls, shutdown, open <app>'); }
+  println('JunoOS Terminal (type help)');
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){
+      const cmd=input.value.trim(); println('> '+cmd); input.value='';
+      const [head,...rest]=cmd.split(' '); const tail=rest.join(' ');
+      switch(head){
+        case 'help': help(); break;
+        case 'date': println(String(new Date())); break;
+        case 'lang': println('Language: '+currentLang); break;
+        case 'echo': println(tail); break;
+        case 'notify': notify('Terminal', tail||randomJuno()); break;
+        case 'bubbles': spawnBubble(); break;
+        case 'juno': println(randomJuno()); break;
+        case 'color': document.documentElement.style.setProperty('--accent', tail||'#80ffea'); println('accent='+ (tail||'#80ffea')); break;
+        case 'cls': hist.innerHTML=''; break;
+        case 'shutdown': doShutdown(); break;
+        case 'open': openApp(rest[0]); break;
+        default: println('Unknown. (｡•́︿•̀｡)');
+      }
+    }
+  });
+}
+
+// ===== Music =====
+function openMusic(){
+  const tpl=document.getElementById('tpl-music').content.cloneNode(true);
+  const win=createWindow(getText('app.music'),'🎵',tpl);
+  const audio=win.querySelector('#audio'); const play=win.querySelector('#music-play'); const pause=win.querySelector('#music-pause'); const vol=win.querySelector('#music-vol'); const url=win.querySelector('#music-url'); const load=win.querySelector('#music-load-url'); const file=win.querySelector('#music-file'); const info=win.querySelector('#music-info'); const vis=win.querySelector('#music-visual');
+  for(let i=0;i<32;i++){ const b=document.createElement('div'); b.className='music-bar'; vis.appendChild(b); }
+  let ctx,src,analyser,rafId; function setupAudioCtx(){ if(ctx) return; ctx=new (window.AudioContext||window.webkitAudioContext)(); analyser=ctx.createAnalyser(); analyser.fftSize=64; src=ctx.createMediaElementSource(audio); src.connect(analyser); analyser.connect(ctx.destination); }
+  function animate(){ const arr=new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(arr); const bars=vis.querySelectorAll('.music-bar'); bars.forEach((b,i)=>{ const v=arr[i]||0; b.style.height=(10+v/2)+'px'; }); rafId=requestAnimationFrame(animate); }
+  function startVis(){ if(!ctx) setupAudioCtx(); if(rafId) cancelAnimationFrame(rafId); animate(); }
+  play.onclick=()=>{ audio.play(); startVis(); };
+  pause.onclick=()=>{ audio.pause(); };
+  vol.oninput=()=>{ audio.volume=vol.value };
+  load.onclick=()=>{ audio.src=url.value.trim(); audio.play(); startVis(); info.textContent=url.value.split('/').slice(-1)[0]||'stream'; };
+  file.parentElement.onclick=()=>file.click();
+  file.onchange=()=>{ const f=file.files[0]; if(!f) return; audio.src=URL.createObjectURL(f); audio.play(); startVis(); info.textContent=f.name; };
+}
+
+// ===== Settings (API key, Language, Background, Answer Book) =====
+const PRESETS = [
+  {type:'img',src:'https://images.unsplash.com/photo-1557683316-973673baf926?w=1600'},
+  {type:'img',src:'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1600'},
+  {type:'img',src:'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=1600'},
+  {type:'grad',css:'linear-gradient(135deg,#89f7fe,#66a6ff)'},
+  {type:'grad',css:'radial-gradient(circle at 20% 20%,#fff,#dff6ff)'}
+];
+function openSettings(){
+  const tpl=document.getElementById('tpl-settings').content.cloneNode(true);
+  const win=createWindow(getText('app.settings'),'⚙️',tpl);
+  const keyInput=win.querySelector('#api-key'); keyInput.value=localStorage.getItem('juno.apiKey')||''; win.querySelector('#api-save').onclick=()=>{ localStorage.setItem('juno.apiKey', keyInput.value.trim()); notify('Settings','API Key saved','success'); };
+  const langSel=win.querySelector('#lang'); langSel.value=currentLang; langSel.onchange=()=>{ currentLang=langSel.value; localStorage.setItem('juno.lang', currentLang); applyI18n(); renderStart(); renderDesktop(); notify('Settings','Language changed'); };
+  const bgUrl=win.querySelector('#bg-url'); win.querySelector('#bg-apply').onclick=()=>{ setBackground({type:'img',src:bgUrl.value.trim()}); };
+  win.querySelector('#bg-file').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return; const url=URL.createObjectURL(f); setBackground({type:'img',src:url}); });
+  const grid=win.querySelector('#bg-grid'); grid.innerHTML=''; PRESETS.forEach(p=>{ const it=document.createElement('div'); it.className='bg-item'; if(p.type==='img') it.innerHTML=`<img src="${p.src}">`; else it.innerHTML=`<div class="grad" style="background:${p.css}"></div>`; it.onclick=()=>setBackground(p); grid.appendChild(it); });
+  const book=win.querySelector('#answer-book'); book.value=(localStorage.getItem('juno.book')||'');
+  win.querySelector('#save-book').onclick=()=>{ localStorage.setItem('juno.book', book.value); CUSTOM_BOOK = (book.value||'').split('\n').map(s=>s.trim()).filter(Boolean); notify('Answer Book','Custom lines saved','success'); };
+}
+function setBackground(p){ if(p.type==='img'){ document.body.style.background=`#9fe8ff url('${p.src}') center/cover fixed no-repeat`; } else { document.body.style.background=p.css; } notify('Desktop','Background applied','success'); }
+
+// ===== Calculator =====
+function openCalc(){
+  const tpl=document.getElementById('tpl-calc').content.cloneNode(true);
+  const win=createWindow(getText('app.calc'),'🧮',tpl);
+  const screen=win.querySelector('#calc-screen'); const keys=win.querySelectorAll('.calc-grid button');
+  let expr='';
+  function update(){ screen.textContent=expr||'0'; }
+  function safeEval(s){ return Function('return ('+s+')')(); }
+  keys.forEach(b=>b.onclick=()=>{
+    const k=b.getAttribute('data-k');
+    if(k==='C'){ expr=''; }
+    else if(k==='='){ try{ expr=String(safeEval(expr||'0')); stickerAt('(｡•̀ᴗ-)✧'); }catch{ notify('Calc','(｡•́︿•̀｡) Error','warn'); }
+    } else { expr+=k; }
+    update();
+  });
+}
+
+// ===== Image Viewer =====
+function openViewer(){
+  const tpl=document.getElementById('tpl-viewer').content.cloneNode(true);
+  const win=createWindow(getText('app.viewer'),'🖼️',tpl);
+  const img=win.querySelector('#view-img'); const url=win.querySelector('#view-url'); const load=win.querySelector('#view-load'); const file=win.querySelector('#view-file'); const zoom=win.querySelector('#view-zoom');
+  function applyZoom(){ img.style.transform=`scale(${zoom.value})`; img.style.transformOrigin='center center'; }
+  zoom.oninput=applyZoom;
+  load.onclick=()=>{ img.src=url.value.trim(); applyZoom(); };
+  file.parentElement.onclick=()=>file.click();
+  file.onchange=()=>{ const f=file.files[0]; if(!f) return; img.src=URL.createObjectURL(f); applyZoom(); };
+}
+
+// ===== InStore (mock) =====
+function openStore(){
+  const tpl=document.getElementById('tpl-store').content.cloneNode(true);
+  const win=createWindow('InStore','🏪',tpl);
+  const grid=win.querySelector('#store-grid');
+  const items=[
+    {icon:'☁️',name:'Weather',desc:'实时天气 www',action:()=>notify('InStore','已安装 Weather','success')},
+    {icon:'🗓️',name:'Calendar',desc:'行程安排 (｡•̀ᴗ-)✧',action:()=>notify('InStore','已安装 Calendar','success')},
+    {icon:'🧼',name:'Cleaner',desc:'清理缓存 qwq',action:()=>{localStorage.clear(); notify('InStore','已清理缓存','success');}},
+    {icon:'🧪',name:'Periodic Table',desc:'元素信息',action:()=>openPTable()},
+    {icon:'🧮',name:'Calculator',desc:'四则运算',action:()=>openCalc()},
+    {icon:'🪦',name:'MausoleumSweeper',desc:'10×10 “扫墓”小游戏 (Phombie / M-Variable)',action:()=>openMausoleum()}
+  ];
+  items.forEach(it=>{
+    const card=document.createElement('div'); card.className='store-card';
+    card.innerHTML=`<div style="font-size:32px">${it.icon}</div><h4>${it.name}</h4><div class="small">${it.desc}</div>`;
+    const btn=document.createElement('button'); btn.textContent='Open'; btn.onclick=it.action; card.appendChild(btn);
+    grid.appendChild(card);
+  });
+}
+
+// ===== Periodic Table (full layout positions) =====
+const PTABLE=[
+  [1,'H','Hydrogen',1,1,'s'],[2,'He','Helium',18,1,'s'],
+  [3,'Li','Lithium',1,2,'s'],[4,'Be','Beryllium',2,2,'s'],[5,'B','Boron',13,2,'p'],[6,'C','Carbon',14,2,'p'],[7,'N','Nitrogen',15,2,'p'],[8,'O','Oxygen',16,2,'p'],[9,'F','Fluorine',17,2,'p'],[10,'Ne','Neon',18,2,'p'],
+  [11,'Na','Sodium',1,3,'s'],[12,'Mg','Magnesium',2,3,'s'],[13,'Al','Aluminium',13,3,'p'],[14,'Si','Silicon',14,3,'p'],[15,'P','Phosphorus',15,3,'p'],[16,'S','Sulfur',16,3,'p'],[17,'Cl','Chlorine',17,3,'p'],[18,'Ar','Argon',18,3,'p'],
+  [19,'K','Potassium',1,4,'s'],[20,'Ca','Calcium',2,4,'s'],[21,'Sc','Scandium',3,4,'d'],[22,'Ti','Titanium',4,4,'d'],[23,'V','Vanadium',5,4,'d'],[24,'Cr','Chromium',6,4,'d'],[25,'Mn','Manganese',7,4,'d'],[26,'Fe','Iron',8,4,'d'],[27,'Co','Cobalt',9,4,'d'],[28,'Ni','Nickel',10,4,'d'],[29,'Cu','Copper',11,4,'d'],[30,'Zn','Zinc',12,4,'d'],[31,'Ga','Gallium',13,4,'p'],[32,'Ge','Germanium',14,4,'p'],[33,'As','Arsenic',15,4,'p'],[34,'Se','Selenium',16,4,'p'],[35,'Br','Bromine',17,4,'p'],[36,'Kr','Krypton',18,4,'p'],
+  [37,'Rb','Rubidium',1,5,'s'],[38,'Sr','Strontium',2,5,'s'],[39,'Y','Yttrium',3,5,'d'],[40,'Zr','Zirconium',4,5,'d'],[41,'Nb','Niobium',5,5,'d'],[42,'Mo','Molybdenum',6,5,'d'],[43,'Tc','Technetium',7,5,'d'],[44,'Ru','Ruthenium',8,5,'d'],[45,'Rh','Rhodium',9,5,'d'],[46,'Pd','Palladium',10,5,'d'],[47,'Ag','Silver',11,5,'d'],[48,'Cd','Cadmium',12,5,'d'],[49,'In','Indium',13,5,'p'],[50,'Sn','Tin',14,5,'p'],[51,'Sb','Antimony',15,5,'p'],[52,'Te','Tellurium',16,5,'p'],[53,'I','Iodine',17,5,'p'],[54,'Xe','Xenon',18,5,'p'],
+  [55,'Cs','Caesium',1,6,'s'],[56,'Ba','Barium',2,6,'s'],[57,'La','Lanthanum',3,6,'f'],[58,'Ce','Cerium',4,8,'f'],[59,'Pr','Praseodymium',5,8,'f'],[60,'Nd','Neodymium',6,8,'f'],[61,'Pm','Promethium',7,8,'f'],[62,'Sm','Samarium',8,8,'f'],[63,'Eu','Europium',9,8,'f'],[64,'Gd','Gadolinium',10,8,'f'],[65,'Tb','Terbium',11,8,'f'],[66,'Dy','Dysprosium',12,8,'f'],[67,'Ho','Holmium',13,8,'f'],[68,'Er','Erbium',14,8,'f'],[69,'Tm','Thulium',15,8,'f'],[70,'Yb','Ytterbium',16,8,'f'],[71,'Lu','Lutetium',17,6,'d'],[72,'Hf','Hafnium',4,6,'d'],[73,'Ta','Tantalum',5,6,'d'],[74,'W','Tungsten',6,6,'d'],[75,'Re','Rhenium',7,6,'d'],[76,'Os','Osmium',8,6,'d'],[77,'Ir','Iridium',9,6,'d'],[78,'Pt','Platinum',10,6,'d'],[79,'Au','Gold',11,6,'d'],[80,'Hg','Mercury',12,6,'d'],[81,'Tl','Thallium',13,6,'p'],[82,'Pb','Lead',14,6,'p'],[83,'Bi','Bismuth',15,6,'p'],[84,'Po','Polonium',16,6,'p'],[85,'At','Astatine',17,6,'p'],[86,'Rn','Radon',18,6,'p'],
+  [87,'Fr','Francium',1,7,'s'],[88,'Ra','Radium',2,7,'s'],[89,'Ac','Actinium',3,7,'f'],[90,'Th','Thorium',4,9,'f'],[91,'Pa','Protactinium',5,9,'f'],[92,'U','Uranium',6,9,'f'],[93,'Np','Neptunium',7,9,'f'],[94,'Pu','Plutonium',8,9,'f'],[95,'Am','Americium',9,9,'f'],[96,'Cm','Curium',10,9,'f'],[97,'Bk','Berkelium',11,9,'f'],[98,'Cf','Californium',12,9,'f'],[99,'Es','Einsteinium',13,9,'f'],[100,'Fm','Fermium',14,9,'f'],[101,'Md','Mendelevium',15,9,'f'],[102,'No','Nobelium',16,9,'f'],[103,'Lr','Lawrencium',17,7,'d'],[104,'Rf','Rutherfordium',4,7,'d'],[105,'Db','Dubnium',5,7,'d'],[106,'Sg','Seaborgium',6,7,'d'],[107,'Bh','Bohrium',7,7,'d'],[108,'Hs','Hassium',8,7,'d'],[109,'Mt','Meitnerium',9,7,'d'],[110,'Ds','Darmstadtium',10,7,'d'],[111,'Rg','Roentgenium',11,7,'d'],[112,'Cn','Copernicium',12,7,'d'],[113,'Nh','Nihonium',13,7,'p'],[114,'Fl','Flerovium',14,7,'p'],[115,'Mc','Moscovium',15,7,'p'],[116,'Lv','Livermorium',16,7,'p'],[117,'Ts','Tennessine',17,7,'p'],[118,'Og','Oganesson',18,7,'p']
+];
+function openPTable(){
+  const tpl=document.getElementById('tpl-ptable').content.cloneNode(true);
+  const win=createWindow(getText('app.ptable'),'🧪',tpl);
+  const grid=win.querySelector('#pt-grid');
+  PTABLE.forEach(([Z,SYM,NAME,COL,ROW,BL])=>{
+    const cell=document.createElement('div'); cell.className='elem'; cell.style.gridColumn=COL; cell.style.gridRow=ROW; cell.dataset.z=Z;
+    cell.innerHTML=`<div class="Z">${Z}</div><div class="sym">${SYM}</div><div class="name">${NAME}</div>`;
+    if(BL==='s') cell.style.background='#eafff2';
+    if(BL==='p') cell.style.background='#e8f2ff';
+    if(BL==='d') cell.style.background='#fff6e3';
+    if(BL==='f') cell.style.background='#ffe6fa';
+    cell.onclick=()=>notify(`${SYM} · ${NAME}`,`Z=${Z} ${randomJuno()}`,'info',3600);
+    grid.appendChild(cell);
+  });
+}
+
+// ===== InCom (My Computer) =====
+function openInCom(){
+  const tpl=document.getElementById('tpl-incom').content.cloneNode(true);
+  const win=createWindow(getText('app.incom'),'🖥️',tpl);
+  const grid=win.querySelector('#incom-grid');
+  const drives=[
+    {name:'C:',label:'System',total:3.2,used:1.1},
+    {name:'D:',label:'Workbench',total:5.0,used:2.7},
+    {name:'E:',label:'Archive',total:7.2,used:6.8},
+    {name:'F:',label:'HoloCache',total:1.6,used:0.4}
+  ];
+  drives.forEach(d=>{
+    const free=(d.total-d.used).toFixed(2);
+    const pct=Math.max(0,Math.min(100, Math.round(d.used/d.total*100)));
+    const card=document.createElement('div'); card.className='incom-card';
+    card.innerHTML=`<div style="display:flex;align-items:center;gap:10px"><div style="font-size:28px">🗄️</div><div><div style="font-weight:900">${d.name} <span class="small">${d.label}</span></div><div class="small">${d.used.toFixed(2)} / ${d.total.toFixed(2)} BB · Free ${free} BB</div></div></div><div class="incom-bar"><div style="width:${pct}%"></div></div>`;
+    card.onclick=()=>notify('InCom',`${d.name} · 已用 ${pct}% · ${randomJuno()}`,'info');
+    grid.appendChild(card);
+  });
+}
+
+// ===== Mausoleum Sweeper (10×10) =====
+function openMausoleum(){
+  const tpl=document.getElementById('tpl-mausoleum').content.cloneNode(true);
+  const win=createWindow('扫墓·MausoleumSweeper','🪦',tpl);
+  const grid=win.querySelector('#ms-grid'); const remain=win.querySelector('#ms-remaining'); const restart=win.querySelector('#ms-restart');
+  const W=10,H=10,MINES=15; let mineSet=new Set(), revealed=new Set(), flags=new Set(), over=false;
+  function idx(x,y){return y*W+x}
+  function xy(i){return [i%W, Math.floor(i/W)]}
+  function inb(x,y){return x>=0&&x<W&&y>=0&&y<H}
+  function neighbors(x,y){const a=[]; for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++){ if(dx||dy){ const nx=x+dx,ny=y+dy; if(inb(nx,ny)) a.push([nx,ny]); } } return a}
+  function plant(){ mineSet.clear(); while(mineSet.size<MINES){ mineSet.add(Math.floor(Math.random()*W*H)); } }
+  function countAdj(x,y){ return neighbors(x,y).filter(([nx,ny])=>mineSet.has(idx(nx,ny))).length }
+  function updateRemain(){ remain.textContent = `M-Variable: ${MINES - flags.size}` }
+  function reveal(i){ if(over||revealed.has(i)||flags.has(i)) return; revealed.add(i); const [x,y]=xy(i); const cell=grid.children[i]; cell.classList.add('revealed'); const n=countAdj(x,y); cell.textContent=n? n : '';
+    if(n===0){ neighbors(x,y).forEach(([nx,ny])=>reveal(idx(nx,ny))); }
+  }
+  function boom(){ over=true; mineSet.forEach(m=>{ const c=grid.children[m]; c.classList.add('revealed'); c.textContent='M'; c.style.color='#d33'; }); notify('Mausoleum','(｡>﹏<｡) 你唤醒了太多 Phombie！','error',5000); stickerAt('QAQ'); }
+  function checkWin(){ if(over) return; if(revealed.size === W*H - MINES){ over=true; notify('Mausoleum','(｡•̀ᴗ-)✧ 全部 Phombie 都安息了，留下的只有 M-Variable','success',5200); }
+  }
+  function build(){ grid.innerHTML=''; plant(); for(let i=0;i<W*H;i++){ const c=document.createElement('div'); c.className='ms-cell'; c.oncontextmenu=(e)=>{ e.preventDefault(); if(over||revealed.has(i)) return; if(flags.has(i)){ flags.delete(i); c.classList.remove('flag'); c.textContent=''; } else { flags.add(i); c.classList.add('flag'); c.textContent='M'; } updateRemain(); };
+      c.onclick=()=>{ if(over) return; if(flags.has(i)) return; if(mineSet.has(i)){ boom(); } else { c.textContent='•'; reveal(i); checkWin(); } };
+      grid.appendChild(c); }
+    flags.clear(); revealed.clear(); over=false; updateRemain();
+  }
+  restart.onclick=build; build();
+}
+
+// ===== Open apps =====
+function openApp(id){
+  if(id==='incom') return openInCom();
+  if(id==='inchat') return openInChat();
+  if(id==='browser') return openBrowser();
+  if(id==='note') return openNote();
+  if(id==='inpaint') return openInPaint();
+  if(id==='terminal') return openTerminal();
+  if(id==='music') return openMusic();
+  if(id==='settings') return openSettings();
+  if(id==='calc') return openCalc();
+  if(id==='viewer') return openViewer();
+  if(id==='store') return openStore();
+  if(id==='ptable') return openPTable();
+}
+
+// ===== Helpers =====
+function getText(key){ const v=(I18N[currentLang]||{})[key]; return v||key; }
+function tick(){ const d=new Date(); const pad=n=>String(n).padStart(2,'0'); const t=`${pad(d.getHours())}:${pad(d.getMinutes())}`; document.getElementById('clock').textContent=t; } setInterval(tick,1000); tick();
+applyI18n();
+
+// ===== Power buttons & shutdown animation =====
+const restartBtn=document.getElementById('btn-restart'); const shutdownBtn=document.getElementById('btn-shutdown');
+restartBtn.onclick=()=>{ location.reload(); };
+shutdownBtn.onclick=()=>{ doShutdown(); };
+function doShutdown(){
+  const sh=document.getElementById('shutdown'); sh.classList.add('show');
+  notify('JunoOS','(｡•́︿•̀｡) Goodbye');
+  setTimeout(()=>{ document.getElementById('power-on').style.display='inline-block'; }, 2200);
+}
+const powerOn=document.getElementById('power-on'); powerOn.onclick=()=>{ location.reload(); }
+
+// ===== Self tests (lightweight) =====
+function selfTest(){
+  try{
+    console.assert(Array.isArray(getBook()) && getBook().length >= DEFAULT_BOOK.length, 'Answer Book parse failed');
+    const _r = Function('return (1+2*3)')(); console.assert(_r===7,'Calc eval failed');
+    const el = stickerAt('> <', 8, 8); setTimeout(()=>{try{el.remove();}catch(_){}}
+    ,50);
+    // column layout test: if no saved icon positions, 7th icon should start a new column
+    const saved=localStorage.getItem('juno.icons'); if(!saved){ const icons=[...document.querySelectorAll('#desktop .icon')]; if(icons.length>=7){ const l1=parseInt(icons[0].style.left||'16'); const l7=parseInt(icons[6].style.left||'16'); console.assert(l7>l1, 'Column wrap failed'); } }
+    console.log('[JunoOS] SelfTest passed');
+  }catch(e){ notify('SelfTest','Error: '+e.message,'error',7000); }
+}
+setTimeout(selfTest, 800);
+</script>
+</body>
+</html>
