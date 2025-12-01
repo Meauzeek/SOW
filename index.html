@@ -3,220 +3,453 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>随星录 - 企划门户</title>
-    <!-- 引入Tailwind CSS -->
+    <title>S.O.W. | 随星录</title>
+    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入Inter和Noto Sans SC字体 -->
+    <!-- 引入字体: Inter, Noto Sans SC, Roboto Mono 以及 新增的像素字体 Silkscreen -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+SC:wght@400;500;700;900&family=Roboto+Mono:wght@400;500;700&family=Silkscreen&display=swap" rel="stylesheet">
+    <!-- 图标库 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
+        :root {
+            --aeterna-cyan: #67e8f9;
+            --aeterna-blue: #3b82f6;
+            --bg-dark: #050505;
+            --card-bg: rgba(20, 25, 35, 0.6);
+            --card-border: rgba(255, 255, 255, 0.15);
+        }
+
         body {
             font-family: 'Inter', 'Noto Sans SC', sans-serif;
-            /* 移除背景图和颜色，将由canvas处理 */
+            background-color: var(--bg-dark);
+            color: #e5e7eb;
+            overflow-x: hidden;
+            margin: 0;
         }
-        /* 卡片悬停时的辉光和浮动效果 */
-        .portal-card {
-            background-color: rgba(17, 24, 39, 0.7); /* bg-gray-900/70 */
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(55, 65, 81, 0.5); /* border-gray-700/50 */
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            position: relative;
-            overflow: hidden;
+
+        /* 像素字体类 */
+        .font-pixel {
+            font-family: 'Silkscreen', cursive;
+            letter-spacing: -0.05em;
         }
-        .portal-card:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 0 30px rgba(56, 189, 248, 0.3); /* shadow-sky-400/30 */
-            border-color: rgba(56, 189, 248, 0.5); /* border-sky-400/50 */
+
+        .font-mono-tech {
+            font-family: 'Roboto Mono', monospace;
         }
-        /* 卡片内部的伪元素光效 */
-        .portal-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(125, 211, 252, 0.15) 0%, transparent 40%);
-            transition: opacity 0.5s;
-            opacity: 0;
-            pointer-events: none;
-            animation: rotate 10s linear infinite;
-        }
-        .portal-card:hover::before {
-            opacity: 1;
-        }
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        /* Canvas背景 */
-        #starfield-canvas {
+
+        /* 动态背景 Canvas */
+        #starfield {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: -1;
+            /* 极光背景叠加 */
+            background: radial-gradient(circle at 50% 120%, #082f49 0%, #000000 70%);
+        }
+
+        /* === 门户卡片核心样式 (Blocky & Frutiger Aero) === */
+        .portal-card {
+            position: relative;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            /* 粗边框设计 */
+            border: 2px solid var(--card-border); 
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            /* 硬朗的几何切角 */
+            clip-path: polygon(
+                0 0, 
+                100% 0, 
+                100% calc(100% - 24px), 
+                calc(100% - 24px) 100%, 
+                0 100%
+            );
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* 侧边色块条 (初始状态) */
+        .portal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background-color: var(--card-border); /* 默认灰色 */
+            transition: width 0.3s ease, background-color 0.3s ease;
+            z-index: 0;
+        }
+
+        /* 悬停效果：色块展开，整体变亮 */
+        .portal-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--hover-color);
+            background: rgba(30, 40, 55, 0.8);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 悬停时侧边条变宽并变色 */
+        .portal-card:hover::before {
+            width: 100%; /* 充满背景，变成色块风格 */
+            background-color: var(--hover-bg); /* 使用半透明的主题色 */
+            opacity: 0.15; /* 保持内容可读性 */
+        }
+
+        /* 卡片内的高光扫描线 (Frutiger Aero 特征) */
+        .scan-line {
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent);
+            transform: skewY(-15deg);
+            transition: top 0.5s;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .portal-card:hover .scan-line {
+            top: 150%;
+            transition: top 0.6s ease-in-out;
+        }
+
+        /* 图标容器样式 */
+        .icon-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--card-border);
+            transition: all 0.3s;
+        }
+        .portal-card:hover .icon-box {
+            background: var(--hover-color);
+            border-color: var(--hover-color);
+            color: #000; /* 图标反白变黑，增加对比度 */
+        }
+
+        /* 装饰性虚线 */
+        .dashed-line {
+            background-image: linear-gradient(to right, rgba(255,255,255,0.2) 50%, transparent 50%);
+            background-size: 8px 1px;
+            background-repeat: repeat-x;
+            height: 1px;
+            width: 100%;
+            margin: 1rem 0;
+        }
+
+        /* 底部状态点 */
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #4ade80;
+            box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.2);
+            /* 像素化方点 */
+            border-radius: 2px; 
+            animation: blink 2s infinite steps(1); /* 机械式闪烁 */
+        }
+        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0.4; } }
+
+        /* 标题大字辉光 */
+        .logo-glow {
+            filter: drop-shadow(0 0 8px rgba(103, 232, 249, 0.5));
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-200">
-    <!-- 动态星空背景 -->
-    <canvas id="starfield-canvas"></canvas>
+<body class="min-h-screen flex flex-col relative selection:bg-cyan-500 selection:text-black">
 
-    <div class="relative min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
-        <!-- 页面主标题 -->
-        <header class="text-center mb-12">
-            <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold text-white tracking-wider">
-                随星录
-            </h1>
-            <p class="text-lg sm:text-xl text-sky-300 mt-2 tracking-widest font-mono">A STELLALOGUE OF WHIMSIES</p>
-            <div class="w-24 h-px bg-sky-400/50 mx-auto mt-6"></div>
-        </header>
+    <canvas id="starfield"></canvas>
 
-        <!-- 子网站链接卡片容器 -->
-        <main class="w-full max-w-5xl">
-            <div id="portal-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- 卡片将由JavaScript动态生成 -->
+    <!-- 顶部导航 / 状态栏 -->
+    <header class="w-full p-6 md:px-12 flex justify-between items-center z-10 border-b-2 border-white/10 bg-black/40 backdrop-blur-md">
+        <div class="flex items-center gap-6">
+            <!-- 自定义 Logo -->
+            <div class="relative group">
+                <img src="https://zampona.wikidot.com/local--files/main/SOW_LIGHT" alt="SOW Logo" class="h-14 w-auto object-contain logo-glow transition-transform duration-300 group-hover:scale-105">
+                <!-- 装饰性方块 -->
+                <div class="absolute -bottom-2 -right-2 w-3 h-3 bg-cyan-400 opacity-50 hidden md:block"></div>
             </div>
-        </main>
+            
+            <div class="hidden sm:block border-l-2 border-white/20 pl-6 h-10 flex flex-col justify-center">
+                <h1 class="text-2xl font-pixel text-white tracking-widest leading-none mb-1">S.O.W. SYSTEM</h1>
+                <p class="text-[10px] text-cyan-400 font-mono-tech tracking-[0.2em] font-bold">STELLALOGUE // TERMINAL</p>
+            </div>
+        </div>
 
-        <footer class="absolute bottom-4 text-center text-gray-600 text-xs">
-            <p>&copy; 2025 S.O.W. Project. All Rights Reserved.</p>
-        </footer>
-    </div>
+        <!-- 顶部右侧信息 -->
+        <div class="hidden md:flex items-center gap-8 text-xs font-mono-tech font-bold text-gray-400">
+            <div class="flex flex-col items-end">
+                <span class="text-cyan-200 block mb-1">AËTERNA_LINK</span>
+                <div class="flex items-center gap-2">
+                    <span class="status-dot"></span>
+                    <span>STABLE</span>
+                </div>
+            </div>
+            <div class="text-right">
+                <span class="block text-gray-500 mb-1">OPERATOR</span>
+                <span class="text-white bg-white/10 px-2 py-1 rounded-sm">ED_GEORGE</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="flex-1 w-full max-w-[1600px] mx-auto p-6 md:p-12 z-10 flex flex-col">
+        
+        <!-- 欢迎标语区 -->
+        <div class="mb-12 relative pl-4 border-l-4 border-cyan-500/50">
+            <h2 class="text-4xl md:text-6xl font-pixel text-white mb-4 leading-tight">
+                WELCOME BACK,<br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-500">OBSERVER.</span>
+            </h2>
+            <p class="text-base md:text-lg text-gray-400 max-w-2xl font-mono-tech">
+                [SYSTEM] 正在从 陵墓 (The Mausoleum) 读取数据...<br>
+                [LOCATION] 当前锚点：南极联邦 · 茹兰市 (Joinanza)
+            </p>
+        </div>
+
+        <!-- 模块网格 (由JS生成) -->
+        <div id="portal-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
+            <!-- Cards will be injected here -->
+        </div>
+
+    </main>
+
+    <!-- 底部装饰 -->
+    <footer class="w-full p-6 md:px-12 border-t-2 border-white/5 bg-black/60 backdrop-blur-md z-10 mt-auto">
+        <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
+            <div class="text-[10px] text-gray-600 font-mono-tech font-bold">
+                <p class="mb-1">© 2025 S.O.W. PROJECT. ALL RIGHTS RESERVED.</p>
+                <p>DESIGNED BY: ED_GEORGE & MORIKURI_HOTARU</p>
+            </div>
+            <!-- 底部装饰条 -->
+            <div class="flex gap-2 opacity-50">
+                <div class="w-16 h-3 bg-cyan-600"></div>
+                <div class="w-4 h-3 bg-white"></div>
+                <div class="w-2 h-3 bg-gray-500"></div>
+            </div>
+        </div>
+    </footer>
 
     <script>
-        // --- 子网站数据 ---
-        // 在这里添加或修改你的子网站信息
-        // url: 链接地址
-        // title: 卡片主标题
-        // subtitle: 卡片副标题 (英文或代号)
-        // description: 简短描述
+        // 初始化 Lucide 图标
+        // 注意：稍后JS生成内容后会再次调用 createIcons
+        
+        // --- 子网站数据配置 ---
+        // iconColor: 定义卡片的主题色 (Tailwind class or Hex)
+        // iconName: Lucide icon name
         const subSites = [
             {
                 url: 'SOW_Mausoleum_worlds.html',
                 title: '陵墓全息星图',
-                subtitle: 'The Mausoleum',
-                description: '交互式三维坐标图，探索已知的所有“陵墓”子世界及其详细参数。'
+                subtitle: 'THE MAUSOLEUM',
+                description: '交互式三维坐标图，探索已知的所有“陵墓”子世界及其详细参数。观测 3D 星图与 2D 坐标。',
+                iconName: 'globe-2',
+                themeColor: '#3b82f6', // Blue
+                id: '01'
             },
             {
                 url: 'SOW_global_map.html',
                 title: '全球时局图',
-                subtitle: 'Global Situation Map',
-                description: '交互式世界地图，展示《随星录：冰逝》世界线中，全球元素使的分布与阵营势力。'
+                subtitle: 'GLOBAL SITUATION',
+                description: '交互式世界地图，展示《随星录：冰逝》世界线中，全球元素使的分布、阵营势力与关键历史节点。',
+                iconName: 'map',
+                themeColor: '#10b981', // Emerald
+                id: '02'
             },
             {
                 url: 'JunoOS_fusion_V4.html',
-                title: 'JunoOS™系统预览版',
-                subtitle: 'JunoOS™ Preview',
-                description: '使用最受哲学僵尸欢迎的操作系统之一，与Juno一起探寻陵墓的秘密> <。'
+                title: 'JunoOS™ Preview',
+                subtitle: 'OPERATING SYSTEM',
+                description: '最受哲学僵尸欢迎的操作系统预览版。与 Juno 一起探寻陵墓的秘密，包含 InChat 与 InStore 功能。',
+                iconName: 'cpu',
+                themeColor: '#ec4899', // Pink
+                id: '03'
             },
             {
                 url: 'Element_test.html',
                 title: '元素使灵魂测试',
-                subtitle: 'Elementalist Soul Test',
-                description: '一个交互式心理测试，通过一系列问题分析你的灵魂特质，并匹配最契合的元素使。'
+                subtitle: 'RESONANCE TEST',
+                description: '通过一系列心理与哲学问题，分析你的灵魂特质，匹配最契合的五位元素使伙伴。',
+                iconName: 'sparkles',
+                themeColor: '#a855f7', // Purple
+                id: '04'
             },
             {
                 url: 'Element_draw.html',
-                title: '元素使召唤模拟',
-                subtitle: 'Gacha Simulator',
-                description: '体验《随星录》世界中的元素使召唤系统，看看你能否召唤出稀有的元素使伙伴。'
+                title: '召唤模拟器',
+                subtitle: 'GACHA SIMULATOR',
+                description: '体验《随星录》世界中的元素使召唤系统，验证你的欧气。包含十连抽与历史记录功能。',
+                iconName: 'gem',
+                themeColor: '#f59e0b', // Amber
+                id: '05'
             },
             {
                 url: 'https://www.qidian.com/book/1045383579/',
-                title: '《随星录：冰逝》',
-                subtitle: 'A Stellalogue Of Whimsies: The Requiem Of Thaw',
-                description: '《随星录》最新的正传。欢迎前来阅读。'
+                title: '随星录：冰逝',
+                subtitle: 'REQUIEM OF THAW',
+                description: '《随星录》最新正传小说。点击前往起点中文网阅读。外部链接。',
+                iconName: 'book-open',
+                themeColor: '#94a3b8', // Slate
+                id: '06'
             },
             {
                 url: 'https://www.17k.com/book/3087560.html',
-                title: '《随星录》（旧）',
-                subtitle: 'A Stellalogue Of Whimsies: Randomized Celestial Catalog',
-                description: '《随星录》梦开始的地方。'
+                title: '随星录（旧）',
+                subtitle: 'THE ORIGIN',
+                description: '梦开始的地方。17K小说网上的随星录旧版。包含了最初的构想与设定。',
+                iconName: 'archive',
+                themeColor: '#64748b', // Slate Gray
+                id: '07'
             },
-            // 如果有新的子网站，在这里添加新的对象即可
-            // {
-            //     url: 'new_page.html',
-            //     title: '新的项目',
-            //     subtitle: 'New Project',
-            //     description: '这是一个未来新项目的描述。'
-            // }
+            {
+                url: '#', // Placeholder
+                title: '角色信息图鉴',
+                subtitle: 'PERIODIC TABLE',
+                description: '以元素周期表为索引的角色信息档案。查看每位元素使的详细设定与数值。',
+                iconName: 'table-2',
+                themeColor: '#06b6d4', // Cyan
+                id: '08'
+            },
+            {
+                url: '#', // Placeholder
+                title: '角色关系网',
+                subtitle: 'SOCIAL NETWORK',
+                description: '错综复杂的命运交织。可视化展示角色之间的阵营、情感与敌对关系。',
+                iconName: 'share-2',
+                themeColor: '#f43f5e', // Rose
+                id: '10'
+            },
         ];
 
         // --- 动态生成卡片 ---
         const grid = document.getElementById('portal-grid');
+        
         subSites.forEach(site => {
+            // 将 hex 颜色转换为 rgba 以用于背景
+            const hoverBg = site.themeColor; 
+            
             const cardHTML = `
-                <a href="${site.url}" target="_blank" class="block portal-card rounded-2xl p-6 transform hover:z-10">
-                    <div class="relative z-10">
-                        <h2 class="text-2xl font-bold text-white">${site.title}</h2>
-                        <p class="text-sm font-mono text-sky-400 mt-1">${site.subtitle}</p>
-                        <p class="text-gray-400 mt-4 text-sm leading-relaxed">${site.description}</p>
-                        <div class="mt-6 text-sky-300 font-semibold flex items-center group">
-                            <span>连接终端</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                            </svg>
+                <a href="${site.url}" target="_blank" 
+                   class="portal-card group p-6 h-64"
+                   style="--hover-color: ${site.themeColor}; --hover-bg: ${site.themeColor};">
+                    
+                    <!-- 扫描线动画元素 -->
+                    <div class="scan-line"></div>
+
+                    <!-- 顶部：图标与编号 -->
+                    <div class="flex justify-between items-start z-10">
+                        <div class="icon-box w-12 h-12 flex items-center justify-center rounded-sm text-gray-300">
+                            <i data-lucide="${site.iconName}" class="w-6 h-6"></i>
                         </div>
+                        <span class="font-pixel text-2xl text-white/10 group-hover:text-white/30 transition-colors">${site.id}</span>
+                    </div>
+
+                    <!-- 中间：装饰线 -->
+                    <div class="dashed-line z-10"></div>
+
+                    <!-- 底部：文字信息 -->
+                    <div class="z-10">
+                        <h3 class="text-2xl font-bold text-white mb-1 tracking-wide group-hover:text-white transition-colors flex items-center gap-2">
+                            ${site.title}
+                            <i data-lucide="arrow-up-right" class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                        </h3>
+                        <p class="text-[10px] font-mono-tech text-[var(--hover-color)] font-bold uppercase mb-2 tracking-widest">${site.subtitle}</p>
+                        <p class="text-sm text-gray-400 line-clamp-2 leading-relaxed group-hover:text-gray-200">${site.description}</p>
                     </div>
                 </a>
             `;
             grid.innerHTML += cardHTML;
         });
 
-        // --- 动态星空背景脚本 ---
-        const canvas = document.getElementById('starfield-canvas');
+        // 重新初始化图标，因为有了新生成的HTML
+        lucide.createIcons();
+
+        // --- 动态星空逻辑 (优化版) ---
+        const canvas = document.getElementById('starfield');
         const ctx = canvas.getContext('2d');
-
+        let width, height;
         let stars = [];
-        let numStars = 500;
+        
+        // 极光色系的星星
+        const starColors = ['#67e8f9', '#ffffff', '#3b82f6', '#c084fc', '#99f6e4'];
 
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        function initCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            createStars();
+        }
+
+        function createStars() {
             stars = [];
-            for (let i = 0; i < numStars; i++) {
+            // 减少星星数量，增加连线清晰度
+            const count = Math.floor((width * height) / 12000); 
+            for (let i = 0; i < count; i++) {
                 stars.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    radius: Math.random() * 1.5 + 0.5,
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    size: Math.random() * 1.5 + 0.5, 
+                    speedX: (Math.random() - 0.5) * 0.15, 
+                    speedY: (Math.random() - 0.5) * 0.15,
                     alpha: Math.random(),
-                    speed: Math.random() * 0.2 + 0.1
+                    change: Math.random() * 0.015,
+                    color: starColors[Math.floor(Math.random() * starColors.length)]
                 });
             }
         }
 
-        function drawStars() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#0c1424'; // 深蓝背景
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        function draw() {
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.3)'; // 增加拖尾清除率，保持画面较干净
+            ctx.fillRect(0, 0, width, height);
 
             stars.forEach(star => {
+                star.alpha += star.change;
+                if (star.alpha <= 0.1 || star.alpha >= 1) star.change *= -1;
+                
+                star.x += star.speedX;
+                star.y += star.speedY;
+
+                if (star.x < 0) star.x = width;
+                if (star.x > width) star.x = 0;
+                if (star.y < 0) star.y = height;
+                if (star.y > height) star.y = 0;
+
+                ctx.globalAlpha = Math.max(0, Math.min(1, star.alpha));
+                ctx.fillStyle = star.color;
                 ctx.beginPath();
-                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(224, 242, 254, ${star.alpha})`; // sky-100
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
                 ctx.fill();
-
-                star.x -= star.speed;
-                if (star.x < 0) {
-                    star.x = canvas.width;
-                }
             });
+            
+            // 星座连线
+            ctx.globalAlpha = 0.12;
+            ctx.strokeStyle = '#67e8f9';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < stars.length; i++) {
+                for (let j = i + 1; j < stars.length; j++) {
+                    const dx = stars[i].x - stars[j].x;
+                    const dy = stars[i].y - stars[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 90) { 
+                        ctx.beginPath();
+                        ctx.moveTo(stars[i].x, stars[i].y);
+                        ctx.lineTo(stars[j].x, stars[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            requestAnimationFrame(draw);
         }
 
-        function animate() {
-            drawStars();
-            requestAnimationFrame(animate);
-        }
-
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-        animate();
+        window.addEventListener('resize', initCanvas);
+        initCanvas();
+        draw();
     </script>
 </body>
 </html>
-
