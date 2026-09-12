@@ -5,7 +5,8 @@ export async function exportMapImage(map,{width=3840,aspect='current',format='pn
  const height=Math.round(width/(ratios[aspect]||map.w/map.h));
  if(!Number.isInteger(width)||width<640||width>8192||width*height>40000000)throw Error('宽度须为 640—8192 像素，总像素不超过 4000 万');
  if(!map.dem&&view!=='reference')throw Error('高程数据尚未载入，请稍后导出');
- await document.fonts.ready;
+ if(map.layers.water)await map.loadWater();
+ await Promise.all([document.fonts.load('600 16px "Atlas Ethiopic"'),document.fonts.ready]);
  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
  const render=Object.assign(Object.create(WorldMap.prototype),map,{canvas,ctx:canvas.getContext('2d'),dpr:width/map.w,view,kind:projection,preview:false,selected:null,hovered:null,tool:'select',drawPoints:[],adminSelection:null,terrain:null,cityHandles:[],vertexHandles:[],contextPaths:{...map.contextPaths}});
  if(fitWorld){render.w=1200;render.dpr=width/render.w;}
