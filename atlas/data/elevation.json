@@ -1,0 +1,21 @@
+{
+  "width": 3600,
+  "height": 1800,
+  "bbox": [
+    -180,
+    -90,
+    180,
+    90
+  ],
+  "units": "metres",
+  "source": "NOAA ETOPO 2022",
+  "datum": "EGM2008",
+  "sourceResolutionArcSeconds": 60,
+  "resolutionDegrees": 0.1,
+  "sampling": "nearest neighbour, global overview",
+  "urls": [
+    "https://gis.ngdc.noaa.gov/arcgis/rest/services/DEM_mosaics/DEM_all/ImageServer/exportImage?bbox=-180%2C-90%2C180%2C90&bboxSR=4326&size=3600%2C1800&imageSR=4326&format=tiff&pixelType=F32&interpolation=RSP_NearestNeighbor&compression=LZ77&renderingRule=%7B%22rasterFunction%22%3A+%22none%22%7D&mosaicRule=%7B%22where%22%3A+%22Name%3D%27ETOPO_2022_v1_60s_surface%27%22%7D&f=image",
+    "https://gis.ngdc.noaa.gov/arcgis/rest/services/DEM_mosaics/DEM_all/ImageServer/exportImage?bbox=-180%2C-90%2C180%2C90&bboxSR=4326&size=3600%2C1800&imageSR=4326&format=tiff&pixelType=F32&interpolation=RSP_NearestNeighbor&compression=LZ77&renderingRule=%7B%22rasterFunction%22%3A+%22none%22%7D&mosaicRule=%7B%22where%22%3A+%22Name%3D%27ETOPO_2022_v1_60s_bed%27%22%7D&f=image"
+  ],
+  "retrieved": "2026-09-13"
+}

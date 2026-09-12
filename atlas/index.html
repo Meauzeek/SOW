@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>随星录 · 世界图志 ATLAS</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="qualithm.css"><link rel="stylesheet" href="theme.css"></head>
+<body>
+<header class="topbar">
+ <a class="brand" href="./" aria-label="随星录世界图志"><span class="logo-crop"><img class="logo-light" src="data/logo-black.png" alt="随星录"><img class="logo-dark" src="data/logo-white.png" alt="随星录"></span></a>
+ <nav class="view-tabs" aria-label="地图视图"><button data-view="political" class="active">政区图</button><button data-view="standard">常规地图</button><button data-view="terrain">分层地形</button><button data-view="contours">等高线</button><button data-view="nightlights">夜景图</button><button data-view="reference">原图对照 <span>↗</span></button></nav>
+ <div class="top-actions"><span id="saveStatus" class="save-status">● 正在载入</span><button id="themeToggle" aria-pressed="false" title="切换日间/夜间模式">☾ 夜间</button><button id="panelToggle" title="展开地图图层与资料">图层 / 资料</button><button id="editModeBtn">编辑模式</button><button id="importBtn" class="quiet">导入</button><button id="exportImageBtn">导出图片</button><button id="exportBtn" class="dark">导出项目 <span>↗</span></button></div>
+</header>
+<main class="workspace">
+ <aside class="library">
+  <div class="section-heading"><span>世界档案</span><button id="newCountry" title="新建国家或地区" aria-label="新建国家或地区">＋</button></div>
+  <div class="search"><span>⌕</span><input id="search" placeholder="搜索国家、地区、城市…" aria-label="搜索国家、地区、城市"><kbd>/</kbd></div>
+  <div class="library-tabs"><button id="countriesTab" class="active">国家 / 地区 <span id="countryCount">—</span></button><button id="citiesTab">城市 <span id="cityCount">—</span></button></div>
+  <div class="list-header"><span id="listLabel">领土目录</span><span></span></div>
+  <div id="entityList" class="entity-list"><div class="loading-text">正在读取世界档案…</div></div>
+  <div class="library-footer"><span class="orange-dot"></span> 架空世界 · 可编辑底稿<small></small></div>
+ </aside>
+ <section class="map-area" id="mapArea">
+  <div class="map-heading"><div class="eyebrow">WORLD ATLAS / 随星录</div><h1 id="viewTitle">世界政区图<span>Political atlas</span></h1><p id="viewSubtitle">可编辑世界档案</p></div>
+  <div class="map-badges"><span id="seaBadge">SEA LEVEL <b>+3.7 m</b></span><button id="focusBtn" title="收起侧栏">⛶ 专注</button></div>
+  <canvas id="map" aria-label="可交互世界地图，拖动平移、滚轮缩放，点击国家或城市查看详情" tabindex="0"></canvas>
+  <div id="mapTooltip" class="map-tooltip" hidden></div>
+  <div class="map-tools" role="toolbar" aria-label="地图编辑工具">
+   <button data-tool="select" class="active" title="选择 / 平移 (V)"><span>↖</span><small>选择</small></button>
+   <button data-tool="vertices" title="编辑所选地区边界顶点 (E)"><span>⌗</span><small>边界</small></button>
+   <button data-tool="draw" title="绘制新的领土范围 (D)"><span>⌁</span><small>绘制</small></button>
+   <button data-tool="assign" title="点选省级底稿并调整归属 (A)"><span>▧</span><small>划归</small></button>
+   <button data-tool="city" title="点击地图添加城市 (C)"><span>⊕</span><small>城市</small></button>
+   <div></div><button id="undoBtn" title="撤销 Ctrl+Z"><span>↶</span><small>撤销</small></button><button id="redoBtn" title="重做 Ctrl+Shift+Z"><span>↷</span><small>重做</small></button>
+  </div>
+  <div class="zoom-tools"><button id="zoomIn" aria-label="放大">＋</button><button id="zoomOut" aria-label="缩小">−</button><button id="resetView" title="重置世界视图" aria-label="重置世界视图">⊙</button></div>
+  <div id="editorBanner" class="editor-banner" hidden><b>EDIT MODE</b> 可视化编辑工作区 <button id="editorSave">保存并下载 JSON ↗</button></div>
+  <div id="toolHelp" class="tool-help" hidden></div>
+  <div id="drawActions" class="draw-actions" hidden><button id="finishDraw" class="dark">完成绘制 ↵</button><button id="cancelDraw">取消 Esc</button></div>
+  <div class="map-bottom"><div id="legend" class="legend"><span class="legend-line"></span>架空国界 <span class="legend-dash"></span>区划底稿</div><div class="projection-select"><button id="globeToggle" aria-pressed="false">◎ 地球仪</button><select id="projection" aria-label="地图投影"><option value="robinson">ROBINSON / 全球</option><option value="equirectangular">等距圆柱 / 全球</option><option value="globe">地球仪 / 可旋转</option><option value="north">北极 / 极地</option><option value="south">南极 / 极地</option></select><span id="zoomLabel">100%</span></div></div>
+ </section>
+ <aside class="inspector">
+  <div class="section-heading"><span>地图图层</span><button id="helpBtn" title="使用说明" aria-label="使用说明">?</button></div>
+  <div class="palette-control"><label>政区配色<select id="palette" aria-label="政区配色"><option value="atlas">现代图册</option><option value="nordic">冷调矿物</option><option value="contrast">清晰对比</option><option value="pastel">轻柔粉彩</option><option value="reference">原图配色</option></select></label><div id="paletteSwatches" aria-hidden="true"></div></div><div class="layers">
+   <label><span><i class="layer-icon">▰</i>架空领土</span><input id="layerTerritories" type="checkbox" checked></label>
+   <label><span><i class="layer-icon">▧</i>省级区划底稿 <small>4,596</small></span><input id="layerAdmin" type="checkbox"></label>
+   <label><span><i class="layer-icon">⊙</i>城市与地名</span><input id="layerCities" type="checkbox" checked></label>
+   <label><span><i class="layer-icon">❄</i>冰川 / 冰盖范围</span><input id="layerIce" type="checkbox"></label>
+   <label><span><i class="layer-icon">≈</i>新增淹没示意</span><input id="layerFlood" type="checkbox" checked></label>
+  </div>
+  <div class="sea-panel"><div class="section-label">海平面情景 <span>SEA LEVEL</span></div><div class="sea-value"><input id="seaNumber" type="number" min="-500" max="1000" step="0.01" value="3.7" aria-label="海平面高度"><span>m</span><small>相对于 1986 年 / 现实 0 m</small></div><input id="seaSlider" type="range" min="-20" max="100" step="0.01" value="3.7" aria-label="调整海平面"><div class="presets"><button data-sea="0" data-year="1986">1986 / 现实 · 0 m</button><button data-sea="3.7" data-year="2025" class="active">2025 · +3.7 m</button><button data-sea="5.03" data-year="2039">2039 · ≈ +5.03 m</button></div><p class="data-note sea-model-note">2039：按 1986—2025 年平均 9.49 cm/年匀速外推；未计加速融化。</p><div class="surface-row"><span>高程基准面</span><select id="surfaceMode" aria-label="高程表面"><option value="surface">冰面 / 地表</option><option value="bed">冰下基岩</option></select></div><div class="surface-row"><span>海岸线显示</span><select id="coastMode" aria-label="海岸线显示"><option value="illustrated">按淹没区域拟合</option><option value="dem">DEM 连通淹没</option></select></div><p class="data-note" id="coastNote">按实际连海低洼区拟合；支持 3.7 / 5.03 m。</p><p class="data-note" id="demStatus">正在载入 NOAA 高程…</p></div>
+  <div class="feature-controls"><label><input id="showFeatured" type="checkbox" checked>显示 ✦ 明星标记</label><button id="romanizeTool" type="button">威妥玛拼音工具</button></div><div id="populationLegend" class="population-legend"></div><div class="marker-key"><span>◎ 首都 / 首府</span><span>● 大小按人口</span><span>● 城市</span><span>▣ 自由市</span><span class="low-key">红色：低于海平面</span></div><div class="language-panel country-language-panel"><label class="country-name-toggle"><input type="checkbox" id="showCountryNames" checked>显示国名</label><label><input type="checkbox" id="countryLangZh" checked>中</label><label><input type="checkbox" id="countryLangEn" checked>英</label><label><input type="checkbox" id="countryLangLocal" checked>本地</label></div><div class="language-panel"><span>城市名称显示</span><label><input type="checkbox" id="langZh" checked>汉</label><label><input type="checkbox" id="langEn" checked>英</label><label><input type="checkbox" id="langLocal" checked>本地</label></div>
+  <div class="details-heading"><span>选中对象</span><span id="selectionType">TERRITORY</span></div>
+  <div id="details" class="details"><p class="muted">点击地图，开始探索。</p></div>
+ </aside>
+</main>
+<footer class="statusbar"><div><span class="live-dot"></span><span id="statusText">载入世界档案…</span></div><span id="coordinates">WGS 84 / —</span><div><button id="dataBtn">数据来源与精度 ↗</button><span></span></div></footer>
+<div id="toast" class="toast" role="status" hidden></div>
+<dialog id="modal"><form id="modalForm"><div class="modal-header"><span id="modalEyebrow">WORLD ARCHIVE</span><button type="button" id="closeModal" aria-label="关闭">×</button></div><h2 id="modalTitle"></h2><div id="modalBody"></div><div id="modalFooter" class="modal-footer"><button type="button" id="cancelModal">取消</button><button type="submit" class="dark">保存</button></div></form></dialog>
+<input id="fileInput" type="file" accept=".json,.geojson,.topojson" hidden><input id="demInput" type="file" accept=".tif,.tiff" hidden>
+<script src="vendor/d3.min.js"></script><script src="vendor/d3-geo-projection.min.js"></script><script src="vendor/topojson-client.min.js"></script><script src="vendor/turf.min.js"></script><script src="vendor/geotiff.js"></script><script src="core.js"></script><script src="vendor/pinyin-pro.js"></script><script src="romanization.js"></script><script type="module" src="app.js"></script>
+</body></html>
