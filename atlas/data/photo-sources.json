@@ -5424,6 +5424,71 @@
       "licenseUrl": "",
       "kind": "real-prototype-photo",
       "changes": "Resized and JPEG compressed; no compositional edits"
+    },
+    {
+      "id": "ne-1159149971",
+      "name": "仙台",
+      "file": "data/media/cities/ne-1159149971.jpg",
+      "caption": "仙台 · 现实原型照片",
+      "prototype": "仙台 / Sendai",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:SendaiCity_Skylines_from_Mukaiyama2018.jpg",
+      "author": "Nryate",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "kind": "real-prototype-photo",
+      "changes": "Resized and JPEG compressed; no compositional edits"
+    },
+    {
+      "id": "ne-1159130267",
+      "name": "高松",
+      "file": "data/media/cities/ne-1159130267.jpg",
+      "caption": "高松 · 现实原型照片",
+      "prototype": "高松 / Takamatsu",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Hanazyukai20220729_7a.jpg",
+      "author": "Dokudami",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "kind": "real-prototype-photo",
+      "changes": "Resized and JPEG compressed; no compositional edits"
+    },
+    {
+      "id": "ne-1159151389",
+      "name": "广岛",
+      "file": "data/media/cities/ne-1159151389.jpg",
+      "caption": "广岛 · 现实原型照片",
+      "prototype": "广岛 / Hiroshima",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atomic_Bomb_Dome_and_Motoyaso_River,_Hiroshima,_Northwest_view_20190417_1.jpg",
+      "author": "DXR",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "kind": "real-prototype-photo",
+      "changes": "Resized and JPEG compressed; no compositional edits"
+    },
+    {
+      "id": "ne-1159146975",
+      "name": "三亚",
+      "file": "data/media/cities/ne-1159146975.jpg",
+      "caption": "三亚 · 现实原型照片",
+      "prototype": "三亚 / Sanya",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:SuperStar_Aquarius_at_Phoenix_Island,_Sanya_Bay_-_01.jpg",
+      "author": "Anna Frodesiak",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "kind": "real-prototype-photo",
+      "changes": "Resized and JPEG compressed; no compositional edits"
+    },
+    {
+      "id": "ne-1159149085",
+      "name": "濠镜",
+      "file": "data/media/cities/ne-1159149085.jpg",
+      "caption": "濠镜 · 澳门城市实景",
+      "prototype": "澳门 / Macau",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Macau_-_Skyline.jpg",
+      "author": "kewl.lu",
+      "license": "CC BY 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+      "kind": "real-prototype-photo",
+      "changes": "Resized and JPEG compressed"
     }
   ],
   "unresolved": []
