@@ -1,0 +1,21 @@
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const R=6371008.8;
+export function geometryArea(geometry){
+ const ringArea=ring=>{let sum=0;for(let i=0;i<ring.length;i++){const a=ring[i],b=ring[(i+1)%ring.length],c=ring[(i+2)%ring.length];sum+=(c[0]-a[0])*Math.PI/180*Math.sin(b[1]*Math.PI/180);}return Math.abs(sum*R*R/2);};
+ const polys=geometry.type==='Polygon'?[geometry.coordinates]:geometry.coordinates;return polys.reduce((sum,p)=>sum+Math.max(0,ringArea(p[0])-p.slice(1).reduce((s,r)=>s+ringArea(r),0)),0)/1e6;
+}
+export function rankRecords({countries,cities,boundaries},kind,metric,scope=''){
+ const descendants=id=>{const ids=new Set([id]);for(let n=0;n<countries.length;n++)for(const c of countries)if(ids.has(c.parentId))ids.add(c.id);return ids;};
+ const areas=new Map(boundaries.features.map(f=>[f.properties.id,geometryArea(f.geometry)]));
+ const members=scope?descendants(scope):null;
+ let rows=kind==='cities'?cities.filter(c=>!members||members.has(c.countryId)):countries.filter(c=>kind==='regions'?!!c.parentId:!c.parentId);
+ return rows.map(c=>{let value=metric==='population'?c.population:metric==='gdp'?c.gdpHundredMillionUSD:metric==='perCapita'?(c.population>0&&c.gdpHundredMillionUSD!=null?c.gdpHundredMillionUSD*1e8/c.population:null):kind==='cities'?null:kind==='regions'?areas.get(c.id):[...descendants(c.id)].reduce((sum,id)=>sum+(areas.get(id)||0),0);return {entity:c,value:Number.isFinite(value)?value:null};}).sort((a,b)=>a.value===null?b.value===null?0:1:b.value===null?-1:b.value-a.value||a.entity.name.localeCompare(b.entity.name,'zh'));
+}
+export function installRankings(button,getData,onSelect){
+ const dialog=document.createElement('dialog');dialog.className='rank-dialog';dialog.innerHTML=`<div class="rank-head"><h2>数据排行</h2><button type="button" data-close aria-label="关闭排行榜">×</button></div><div class="rank-controls"><label>对象<select data-kind><option value="countries">国家</option><option value="regions">下属地区</option><option value="cities">城市</option></select></label><label data-scope-wrap hidden>范围<select data-scope></select></label><label>指标<select data-metric><option value="population">人口</option><option value="gdp">GDP</option><option value="perCapita">人均 GDP</option><option value="area">面积</option></select></label></div><p class="rank-note">按当前设定排序 · 国家面积含下属地区 · 城市排名不受“计入国内总数”开关影响</p><div class="rank-table"></div>`;document.body.append(dialog);
+ const q=s=>dialog.querySelector(s);let data;
+ const render=()=>{const kind=q('[data-kind]').value,select=q('[data-metric]');select.querySelector('[value="area"]').disabled=kind==='cities';if(kind==='cities'&&select.value==='area')select.value='population';q('[data-scope-wrap]').hidden=kind!=='cities';const metric=select.value,units={population:'人',gdp:'亿美元',perCapita:'美元',area:'km²'},rows=rankRecords(data,kind,metric,q('[data-scope]').value);q('.rank-table').innerHTML=`<table><thead><tr><th>排名</th><th>名称</th><th>${esc(select.selectedOptions[0].textContent)} · ${units[metric]}</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td>${r.value===null?'—':i+1}</td><td><button data-id="${esc(r.entity.id)}">${r.entity.featured?'★ ':''}${esc(r.entity.name)}</button>${kind==='cities'?`<small>${esc(data.countries.find(c=>c.id===r.entity.countryId)?.name||'')}${r.entity.includeInNationalTotals===false?' · 不计入国内汇总':''}</small>`:''}</td><td>${r.value===null?'未设定':r.value.toLocaleString('zh-CN',{maximumFractionDigits:metric==='population'?0:2})}</td></tr>`).join('')}</tbody></table>`;q('.rank-table').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{dialog.close();onSelect(b.dataset.id);});};
+ q('[data-close]').onclick=()=>dialog.close();dialog.addEventListener('click',e=>{if(e.target===dialog){const b=dialog.getBoundingClientRect();if(e.clientX<b.left||e.clientX>b.right||e.clientY<b.top||e.clientY>b.bottom)dialog.close();}});
+ for(const select of dialog.querySelectorAll('select'))select.onchange=render;
+ button.onclick=()=>{data=getData();q('[data-scope]').innerHTML='<option value="">全球城市</option>'+data.countries.filter(c=>!c.parentId).map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');render();dialog.showModal();};
+}

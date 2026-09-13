@@ -17,3 +17,5 @@
 @media(orientation:landscape) and (max-height:600px){#modal{max-height:96dvh}.floating-profile{max-height:calc(100% - 72px);top:58px}.floating-image{height:auto;max-height:160px}.modal-header{min-height:40px}}
 
 #modal{width:min(580px,94vw)}#modal:has(.export-layout){width:min(960px,94vw)}
+
+.character-link{padding:10px 0}.character-link span,.character-link small{color:var(--muted,#6b7c90)}.character-link p{margin:5px 0}.character-link small{display:block;overflow-wrap:anywhere}
