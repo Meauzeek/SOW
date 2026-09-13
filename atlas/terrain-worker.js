@@ -6,7 +6,7 @@ function grid(mode){return {...dem,values:dem[mode]};}
 function oceanSeeds(d){return [[-160,0],[-30,0],[80,-30],[0,-60],[0,85]].map(([lon,lat])=>Math.floor((90-lat)/180*d.height)*d.width+Math.floor((lon+180)/360*d.width));}
 function flood(mode,sea){const id=mode+':'+sea;if(!floodCache.has(id)){if(floodCache.size>4)floodCache.delete(floodCache.keys().next().value);const d=grid(mode);floodCache.set(id,C.connectedFlood(d.values,d.width,d.height,sea,oceanSeeds(d)));}return floodCache.get(id);}
 function color(z){if(z<-6000)return [106,148,159];if(z<-3000)return [128,165,174];if(z<-1000)return [155,190,194];if(z<0)return [183,207,207];if(z<200)return [177,194,153];if(z<500)return [198,207,164];if(z<1000)return [218,214,173];if(z<2000)return [221,199,157];if(z<3000)return [198,169,140];if(z<4500)return [174,157,147];return [232,228,219];}
-onmessage=e=>{const m=e.data;if(m.type==='night-init'){nightTexture={width:m.width,height:m.height,data:new Uint8ClampedArray(m.buffer)};postMessage({type:'night-ready'});return;}if(m.type==='init'){dem=m.dem;postMessage({type:'ready'});return;}if(m.type==='custom'){custom=m.dem;return;}if(m.type!=='render'||!dem)return;
+onmessage=e=>{const m=e.data;if(m.type==='night-init'){nightTexture={width:m.width,height:m.height,data:new Uint8ClampedArray(m.buffer)};postMessage({type:'night-ready'});return;}if(m.type==='init'){dem=m.dem;floodCache.clear();postMessage({type:'ready'});return;}if(m.type==='custom'){custom=m.dem;return;}if(m.type!=='render'||!dem)return;
  try{
   const p=projection(m.projection),w=m.width,h=m.height,buf=new Uint8ClampedArray(w*h*4),d=grid(m.mode),mask=m.view==='nightlights'?null:flood(m.mode,m.sea),base=m.view==='nightlights'?null:flood(m.mode,0),heights=new Float32Array(w*h);heights.fill(NaN);
   let customMask=null,customBase=null;
@@ -30,5 +30,5 @@ onmessage=e=>{const m=e.data;if(m.type==='night-init'){nightTexture={width:m.wid
   }
   if(m.view==='contours'){const step=m.interval||500;for(let y=1;y<h;y++)for(let x=1;x<w;x++){const j=y*w+x,z=heights[j];if(!Number.isFinite(z))continue;const b=Math.floor(z/step);if(Number.isFinite(heights[j-1])&&b!==Math.floor(heights[j-1]/step)||Number.isFinite(heights[j-w])&&b!==Math.floor(heights[j-w]/step)){const k=j*4;buf.set(z>=0?[150,132,96,255]:[140,172,169,255],k);}}}
   postMessage({type:'rendered',id:m.id,width:w,height:h,buffer:buf.buffer,transform:m.transform},[buf.buffer]);
- }catch(err){postMessage({type:'error',message:err.message});}
+ }catch(err){postMessage({type:'error',id:m.id,message:err.message});}
 };

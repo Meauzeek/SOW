@@ -21,7 +21,7 @@ const map=new WorldMap($('#map'),{
  vertexSelected:p=>editVertexCoordinates(p),removeVertex:p=>transaction('删除边界顶点',()=>{if(!C.removeShared(state.territories,p))throw Error('无法删除：多边形至少保留 3 个顶点');}),
  addVertex:(a,b,p)=>transaction('插入边界顶点',()=>C.insertShared(state.territories,a,b,p)),
  addCity:ll=>cityForm(null,ll),placeCity:ll=>{const c=selectedCity();if(c)transaction('移动城市',()=>{c.coordinates=ll;c.elevation=null;c.elevationSource='移动后待查询';});setTool('select');},
- assign:assignRegion,finishDraw, error:m=>toast('地形计算失败：'+m)
+ assign:assignRegion,finishDraw, status:m=>toast(m),error:m=>toast(m)
 });
 window.atlas={get state(){return state;},map,get selection(){return selection;}};
 function toast(message){$('#toast').textContent=message;$('#toast').hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('#toast').hidden=true,4600);}
@@ -125,6 +125,7 @@ async function start(){try{const saved=await persistence.load();let territories,
   if(saved&&!state.appliedCorrections?.includes('south-coast-cities-r20')){const patch=await fetch('data/south-coast-cities-r20.json').then(r=>r.json());if(applySouthernCorrection(state,patch,turf)){C.validateProject(state);await persistence.save(state);}}
   if(saved&&!state.appliedCorrections?.includes('kobe-r21')){const patch=await fetch('data/kobe-r21.json').then(r=>r.json());if(applySouthernCorrection(state,patch,turf)){C.validateProject(state);await persistence.save(state);}}
   if(saved&&!state.appliedCorrections?.includes('jiahe-r22')){const patch=await fetch('data/jiahe-r22.json').then(r=>r.json());if(applySouthernCorrection(state,patch,turf)){C.validateProject(state);await persistence.save(state);}}
+  if(saved&&!state.appliedCorrections?.includes('jiahe-media-r23')){const patch=await fetch('data/jiahe-media-r23.json').then(r=>r.json());if(applySouthernCorrection(state,patch,turf)){C.validateProject(state);await persistence.save(state);}}
   if(!state.territories.some(f=>f.properties.id===selection))selection=state.territories[0]?.properties.id;map.resize();sync();setView('political');fetch('data/city-elevations.json').then(r=>r.json()).then(samples=>{map.cityElevationSamples=samples;map.draw();renderList();renderDetails();}).catch(()=>{});map.loadWater().catch(e=>toast(e.message));map.loadCoast().then(()=>map.requestTerrain()).catch(e=>toast(e.message));$('#saveStatus').textContent=saved?'● 已读取'+persistence.label+'存档':'● 发布底稿';loadCompleted=true;$('#exportImageBtn').disabled=false;if(saved&&!state.appliedCorrections?.includes('media-assets-r22')){const loaded=state;compactKnownMedia(loaded).then(async changed=>{if(changed&&state===loaded){loaded.appliedCorrections=[...(loaded.appliedCorrections||[]),'media-assets-r22'];await save();}}).catch(()=>{});}
   if(state.customDem)map.setCustomDem(state.customDem);$('#demStatus').textContent='高程按需加载';
 

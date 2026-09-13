@@ -5502,6 +5502,21 @@
       "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
       "kind": "real-prototype-photo",
       "changes": "Resized and JPEG compressed; no compositional edits"
+    },
+    {
+      "id": "jiahe",
+      "name": "嘉禾",
+      "file": "data/media/cities/jiahe.jpg",
+      "fileName": "jiahe.jpg",
+      "caption": "嘉禾 · 从壕股塔眺望南湖与嘉兴城区（现实原型）",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Views_from_Haogu_Pagoda.jpg",
+      "author": "钉钉",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "kind": "real-prototype-photo",
+      "changes": "Wikimedia 960px thumbnail; no compositional edits",
+      "width": 960,
+      "height": 720
     }
   ],
   "unresolved": []
