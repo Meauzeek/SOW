@@ -9,3 +9,5 @@
 @media(max-width:1450px){.brand small{display:none}.topbar .view-tabs{gap:16px}.topbar{gap:14px}.save-status{display:none}}@media(max-width:620px){.topbar #editModeBtn{font-size:9px;padding:7px 5px}.topbar .view-tabs{gap:5px}.topbar .brand-symbol{display:none}.brand-en{letter-spacing:1px}.editor-banner{left:15px;right:15px;font-size:9px;gap:5px}.editor-banner b{font-size:8px}.editor-banner button{font-size:8px}.editing .map-tools{top:156px}.editing .tool-help{top:156px}}
 
 @font-face{font-family:"Atlas Ethiopic";src:url("fonts/NotoSerifEthiopic.ttf") format("truetype");font-weight:100 900;font-display:swap}.native-serif[lang="am"],.native-name[lang="am"]{font-family:"Atlas Ethiopic",serif;font-weight:600}
+
+.historical-media{grid-column:1/-1;margin-top:8px}.historical-media>summary{cursor:pointer;padding:10px 0;font-size:15px;opacity:.75}.historical-media[open]>summary{margin-bottom:8px}
