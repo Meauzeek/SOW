@@ -9,3 +9,16 @@ export function placeCityLabel(point,width,height,used,viewport,gap=9){
  }
  return null;
 }
+// Explicit export selections are never silently discarded. Prefer a nearby free
+// position with a leader; the final bounded fallback is reported to the user.
+export function placeRequiredLabel(point,width,height,used,viewport,gap=9){
+ const direct=placeCityLabel(point,width,height,used,viewport,gap);if(direct)return direct;
+ const [w,h]=viewport;
+ for(let r=24;r<Math.max(w,h);r+=18)for(let i=0;i<16;i++){
+  const a=i*Math.PI/8,left=Math.max(4,Math.min(w-width-4,point[0]+Math.cos(a)*r-width/2)),top=Math.max(4,Math.min(h-height-4,point[1]+Math.sin(a)*r-height/2));
+  const box=[left-3,top-3,left+width+3,top+height+3];
+  if(box[2]<=w&&box[3]<=h&&!used.some(b=>overlaps(box,b)))return {box,x:left,y:top+8,leader:true};
+ }
+ const left=Math.max(4,Math.min(w-width-4,point[0]+gap)),top=Math.max(4,Math.min(h-height-4,point[1]-9));
+ return {box:[left,top,left+width,top+height],x:left,y:top+8,leader:true,overflow:true};
+}
