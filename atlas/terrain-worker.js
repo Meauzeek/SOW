@@ -1,7 +1,7 @@
 importScripts('vendor/d3.min.js','vendor/d3-geo-projection.min.js','core.js');
 let nightTexture=null,dem,custom=null,floodCache=new Map();
 const C=AtlasCore;
-function projection(c){let p;if(c.kind==='globe')p=d3.geoOrthographic().rotate(c.rotation).clipAngle(90);else if(c.kind==='north'||c.kind==='south')p=d3.geoStereographic().rotate([0,c.kind==='north'?-90:90]).clipAngle(90);else if(c.kind==='equirectangular')p=d3.geoEquirectangular().rotate([-11,0]);else p=d3.geoRobinson().rotate([-11,0]);return p.scale(c.scale).translate(c.translate);}
+function projection(c){let p;if(c.kind==='national')p=d3.geoAzimuthalEqualArea().rotate(c.rotation).clipAngle(179.9);else if(c.kind==='globe')p=d3.geoOrthographic().rotate(c.rotation).clipAngle(90);else if(c.kind==='north'||c.kind==='south')p=d3.geoStereographic().rotate([0,c.kind==='north'?-90:90]).clipAngle(90);else if(c.kind==='equirectangular')p=d3.geoEquirectangular().rotate([-11,0]);else p=d3.geoRobinson().rotate([-11,0]);return p.scale(c.scale).translate(c.translate);}
 function grid(mode){return {...dem,values:dem[mode]};}
 function oceanSeeds(d){return [[-160,0],[-30,0],[80,-30],[0,-60],[0,85]].map(([lon,lat])=>Math.floor((90-lat)/180*d.height)*d.width+Math.floor((lon+180)/360*d.width));}
 function flood(mode,sea){const id=mode+':'+sea;if(!floodCache.has(id)){if(floodCache.size>4)floodCache.delete(floodCache.keys().next().value);const d=grid(mode);floodCache.set(id,C.connectedFlood(d.values,d.width,d.height,sea,oceanSeeds(d)));}return floodCache.get(id);}

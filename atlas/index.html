@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>随星录 · 世界图志 ATLAS</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="qualithm.css"><link rel="stylesheet" href="theme.css"></head>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>随星录 · 世界图志 ATLAS</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="qualithm.css"><link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="profile.css"></head>
 <body>
 <header class="topbar">
  <a class="brand" href="./" aria-label="随星录世界图志"><span class="logo-crop"><img class="logo-light" src="data/logo-black.png" alt="随星录"><img class="logo-dark" src="data/logo-white.png" alt="随星录"></span></a>
@@ -17,7 +17,8 @@
  </aside>
  <section class="map-area" id="mapArea">
   <div class="map-heading"><div class="eyebrow">WORLD ATLAS / 随星录</div><h1 id="viewTitle">世界政区图<span>Political atlas</span></h1><p id="viewSubtitle">可编辑世界档案</p></div>
-  <div class="map-badges"><span id="seaBadge">SEA LEVEL <b>+3.7 m</b></span><button id="focusBtn" title="收起侧栏">⛶ 专注</button></div>
+  <div class="map-badges"><span id="seaBadge">SEA LEVEL <b>+3.7 m</b></span><button id="chromeToggle" aria-pressed="false">隐藏页眉页脚</button><button id="focusBtn" title="收起侧栏">⛶ 专注</button></div>
+  <div id="countryBar" class="country-bar" hidden><button id="leaveCountry">← 世界地图</button><button id="countryOverview">全境</button><label><input id="countryNeighbors" type="checkbox">周边陆地</label><button id="countryExport">导出本国地图 ↗</button></div>
   <canvas id="map" aria-label="可交互世界地图，拖动平移、滚轮缩放，点击国家或城市查看详情" tabindex="0"></canvas>
   <div id="mapTooltip" class="map-tooltip" hidden></div>
   <div class="map-tools" role="toolbar" aria-label="地图编辑工具">
@@ -35,7 +36,7 @@
   <div class="map-bottom"><div id="legend" class="legend"><span class="legend-line"></span>架空国界 <span class="legend-dash"></span>区划底稿</div><div class="projection-select"><button id="globeToggle" aria-pressed="false">◎ 地球仪</button><select id="projection" aria-label="地图投影"><option value="robinson">ROBINSON / 全球</option><option value="equirectangular">等距圆柱 / 全球</option><option value="globe">地球仪 / 可旋转</option><option value="north">北极 / 极地</option><option value="south">南极 / 极地</option></select><span id="zoomLabel">100%</span></div></div>
  </section>
  <aside class="inspector">
-  <div class="section-heading"><span>地图图层</span><button id="helpBtn" title="使用说明" aria-label="使用说明">?</button></div>
+<details class="inspector-controls"><summary>地图图层与显示</summary>  <div class="section-heading"><span>地图图层</span><button id="helpBtn" title="使用说明" aria-label="使用说明">?</button></div>
   <div class="palette-control"><label>政区配色<select id="palette" aria-label="政区配色"><option value="atlas">现代图册</option><option value="nordic">冷调矿物</option><option value="contrast">清晰对比</option><option value="pastel">轻柔粉彩</option><option value="reference">原图配色</option></select></label><div id="paletteSwatches" aria-hidden="true"></div></div><div class="layers">
    <label><span><i class="layer-icon">▰</i>架空领土</span><input id="layerTerritories" type="checkbox" checked></label>
    <label><span><i class="layer-icon">▧</i>省级区划底稿 <small>4,596</small></span><input id="layerAdmin" type="checkbox"></label>
@@ -46,7 +47,7 @@
   </div>
   <div class="sea-panel"><div class="section-label">海平面情景 <span>SEA LEVEL</span></div><div class="sea-value"><input id="seaNumber" type="number" min="-500" max="1000" step="0.01" value="3.7" aria-label="海平面高度"><span>m</span><small>相对于 1986 年 / 现实 0 m</small></div><input id="seaSlider" type="range" min="-20" max="100" step="0.01" value="3.7" aria-label="调整海平面"><div class="presets"><button data-sea="0" data-year="1986">1986 / 现实 · 0 m</button><button data-sea="3.7" data-year="2025" class="active">2025 · +3.7 m</button><button data-sea="5.03" data-year="2039">2039 · ≈ +5.03 m</button></div><p class="data-note sea-model-note">2039：按 1986—2025 年平均 9.49 cm/年匀速外推；未计加速融化。</p><div class="surface-row"><span>高程基准面</span><select id="surfaceMode" aria-label="高程表面"><option value="surface">冰面 / 地表</option><option value="bed">冰下基岩</option></select></div><div class="surface-row"><span>海岸线显示</span><select id="coastMode" aria-label="海岸线显示"><option value="illustrated">按淹没区域拟合</option><option value="dem">DEM 连通淹没</option></select></div><p class="data-note" id="coastNote">按实际连海低洼区拟合；支持 3.7 / 5.03 m。</p><p class="data-note" id="demStatus">正在载入 NOAA 高程…</p></div>
   <div class="feature-controls"><label><input id="showFeatured" type="checkbox" checked>显示 ✦ 明星标记</label><button id="romanizeTool" type="button">威妥玛拼音工具</button></div><div id="populationLegend" class="population-legend"></div><div class="marker-key"><span>◎ 首都 / 首府</span><span>● 大小按人口</span><span>● 城市</span><span>▣ 自由市</span><span class="low-key">红色：低于海平面</span></div><div class="language-panel country-language-panel"><label class="country-name-toggle"><input type="checkbox" id="showCountryNames" checked>显示国名</label><label><input type="checkbox" id="countryLangZh" checked>中</label><label><input type="checkbox" id="countryLangEn" checked>英</label><label><input type="checkbox" id="countryLangLocal" checked>本地</label></div><div class="language-panel"><span>城市名称显示</span><label><input type="checkbox" id="langZh" checked>汉</label><label><input type="checkbox" id="langEn" checked>英</label><label><input type="checkbox" id="langLocal" checked>本地</label></div>
-  <div class="details-heading"><span>选中对象</span><span id="selectionType">TERRITORY</span></div>
+</details>  <div class="details-heading"><span>选中对象</span><span id="selectionType">TERRITORY</span></div>
   <div id="details" class="details"><p class="muted">点击地图，开始探索。</p></div>
  </aside>
 </main>

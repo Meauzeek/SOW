@@ -1,6 +1,7 @@
 import {WorldMap} from './map.js';
 // Re-render vectors at the requested device scale. Never enlarge a screen capture.
 export async function exportMapImage(map,{width=3840,aspect='current',format='png',transparent=false,view=map.view,projection=map.kind,fitWorld=false}={}){
+ if(map.countryScope){projection='national';fitWorld=true;if(view==='reference')throw Error('本国地图请选择政区、地形或夜景模式');}
  const ratios={'16:9':16/9,'3:2':3/2,'1:1':1};
  const height=Math.round(width/(ratios[aspect]||map.w/map.h));
  if(!Number.isInteger(width)||width<640||width>8192||width*height>40000000)throw Error('宽度须为 640—8192 像素，总像素不超过 4000 万');
@@ -8,7 +9,7 @@ export async function exportMapImage(map,{width=3840,aspect='current',format='pn
  if(map.layers.water)await map.loadWater();
  await Promise.all([document.fonts.load('600 16px "Atlas Ethiopic"'),document.fonts.ready]);
  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
- const render=Object.assign(Object.create(WorldMap.prototype),map,{canvas,ctx:canvas.getContext('2d'),dpr:width/map.w,view,kind:projection,preview:false,selected:null,hovered:null,tool:'select',drawPoints:[],adminSelection:null,terrain:null,cityHandles:[],vertexHandles:[],contextPaths:{...map.contextPaths}});
+ const render=Object.assign(Object.create(WorldMap.prototype),map,{canvas,exporting:true,ctx:canvas.getContext('2d'),dpr:width/map.w,view,kind:projection,preview:false,selected:null,hovered:null,tool:'select',drawPoints:[],adminSelection:null,terrain:null,cityHandles:[],vertexHandles:[],contextPaths:{...map.contextPaths}});
  if(fitWorld){render.w=1200;render.dpr=width/render.w;}
  render.h=height/render.dpr;
  render.proj=render.makeProjection().scale(map.proj.scale()).translate(map.proj.translate());
@@ -33,7 +34,7 @@ export async function exportMapImage(map,{width=3840,aspect='current',format='pn
      if(map.customDem)worker.postMessage({type:'custom',dem:map.customDem});
      if(texture)worker.postMessage({type:'night-init',...texture},[texture.buffer]);
      const t=render.transform,pt=render.proj.translate(),scale=render.dpr;
-     worker.postMessage({type:'render',id:1,width,height,projection:{kind:projection,rotation:render.rotation,scale:render.proj.scale()*t.k*scale,translate:[(pt[0]*t.k+t.x)*scale,(pt[1]*t.k+t.y)*scale]},transform:{x:t.x,y:t.y,k:t.k,ratio:scale},view,night:!!render.night,mode:render.mode,sea:render.sea,flood:render.layers.flood&&!render.illustratedCoast(),interval:render.interval||500});
+     worker.postMessage({type:'render',id:1,width,height,projection:{kind:projection,rotation:render.kind==='national'?render.nationalRotation:render.rotation,scale:render.proj.scale()*t.k*scale,translate:[(pt[0]*t.k+t.x)*scale,(pt[1]*t.k+t.y)*scale]},transform:{x:t.x,y:t.y,k:t.k,ratio:scale},view,night:!!render.night,mode:render.mode,sea:render.sea,flood:render.layers.flood&&!render.illustratedCoast(),interval:render.interval||500});
     }else if(m.type==='rendered'){
      const c=document.createElement('canvas');c.width=m.width;c.height=m.height;c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(m.buffer),m.width,m.height),0,0);render.terrain={canvas:c,transform:m.transform};clearTimeout(timer);resolve();
     }else if(m.type==='error'){clearTimeout(timer);reject(Error(m.message));}};
