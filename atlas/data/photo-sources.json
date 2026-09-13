@@ -5489,6 +5489,19 @@
       "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
       "kind": "real-prototype-photo",
       "changes": "Resized and JPEG compressed"
+    },
+    {
+      "id": "ne-1159147165",
+      "name": "神户",
+      "file": "data/media/cities/ne-1159147165.jpg",
+      "caption": "神户 · 现实原型照片",
+      "prototype": "神户 / Kobe",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:20190901_Kobe_harbor-1.jpg",
+      "author": "Balon Greyjoy",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "kind": "real-prototype-photo",
+      "changes": "Resized and JPEG compressed; no compositional edits"
     }
   ],
   "unresolved": []
