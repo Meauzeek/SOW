@@ -5517,7 +5517,124 @@
       "changes": "Wikimedia 960px thumbnail; no compositional edits",
       "width": 960,
       "height": 720
+    },
+    {
+      "id": "ne-1159135701",
+      "name": "多佛",
+      "file": "data/media/cities/ne-1159135701.jpg",
+      "caption": "多佛 · 现实原型照片",
+      "prototype": "多佛 / Dover",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dover_from_the_top_of_Dover_Castle_-_geograph.org.uk_-_4061940.jpg",
+      "author": "Dave Croker",
+      "license": "CC BY-SA 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "kind": "real-prototype-photo",
+      "changes": "Resized and JPEG compressed; no compositional edits"
+    },
+    {
+      "id": "ne-1159146373",
+      "name": "加的夫",
+      "file": "data/media/cities/ne-1159146373.jpg",
+      "caption": "加的夫 · 现实原型照片",
+      "prototype": "加的夫 / Cardiff",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cardiff_Bay_WMC.jpg",
+      "author": "grahamwell / Graham profile at Flickr website",
+      "license": "CC BY-SA 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "kind": "real-prototype-photo",
+      "changes": "Resized and JPEG compressed; no compositional edits"
+    },
+    {
+      "id": "ne-1159149119",
+      "name": "曼彻斯特",
+      "file": "data/media/cities/ne-1159149119.jpg",
+      "caption": "曼彻斯特 · 现实原型照片",
+      "prototype": "曼彻斯特 / Manchester",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Tower_Blocks_over_Knott_Mill,_geograph_6866152_by_David_Dixon.jpg",
+      "author": "David Dixon",
+      "license": "CC BY-SA 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "kind": "real-prototype-photo",
+      "changes": "Resized and JPEG compressed; no compositional edits"
+    },
+    {
+      "id": "ne-1159147223",
+      "name": "图卢兹",
+      "file": "data/media/cities/ne-1159147223.jpg",
+      "caption": "图卢兹 · 现实原型照片",
+      "prototype": "图卢兹 / Toulouse",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Toulouse_-_vue_du_Vieux_Toulouse_depuis_St_Sernin_06.jpg",
+      "author": "Frédéric Neupont",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "kind": "real-prototype-photo",
+      "changes": "Resized and JPEG compressed; no compositional edits"
+    },
+    {
+      "id": "ne-1159150037",
+      "name": "马赛",
+      "file": "data/media/cities/ne-1159150037.jpg",
+      "caption": "马赛 · 现实原型照片",
+      "prototype": "马赛 / Marseille",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Notre-Dame_de_la_Garde_aerial_view_2020.jpeg",
+      "author": "Earth777",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "kind": "real-prototype-photo",
+      "changes": "Resized and JPEG compressed; no compositional edits"
+    },
+    {
+      "id": "city-dunkirk",
+      "name": "敦刻尔克",
+      "file": "data/media/cities/city-dunkirk.jpg",
+      "caption": "敦刻尔克 · 现实原型照片",
+      "prototype": "敦刻尔克 / Dunkerque",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dunkerque_hotel_de_ville_vu_port.jpg",
+      "author": "Velvet",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "kind": "real-prototype-photo",
+      "changes": "Resized and JPEG compressed; no compositional edits"
+    },
+    {
+      "id": "city-yat-sen",
+      "name": "逸仙",
+      "file": "data/media/cities/city-yat-sen.jpg",
+      "caption": "逸仙 · 现实原型照片",
+      "prototype": "中山站 / Zhongshan Station (Antarctica)",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Zhong_shan-ant_hg.jpg",
+      "author": "Hannes Grobe, Alfred Wegener Institute",
+      "license": "CC BY-SA 2.5",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+      "kind": "real-prototype-photo",
+      "changes": "Resized and JPEG compressed; no compositional edits"
+    },
+    {
+      "id": "city-fildes",
+      "name": "菲尔德斯",
+      "file": "data/media/cities/city-fildes.jpg",
+      "caption": "菲尔德斯 · 现实原型照片",
+      "prototype": "菲尔德斯半岛、长城站 / Great Wall Station (Antarctica)",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Antarctic_Great_Wall_Station.JPG",
+      "author": "User:Seleonov",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "kind": "real-prototype-photo",
+      "changes": "Resized and JPEG compressed; no compositional edits"
     }
   ],
-  "unresolved": []
+  "unresolved": [
+    {
+      "id": "town-nanqiong",
+      "name": "南穹",
+      "query": "Kunlun Station",
+      "reason": "No verified photographic page image"
+    },
+    {
+      "id": "city-enderby",
+      "name": "恩德比",
+      "query": "Molodyozhnaya Station (Antarctica)",
+      "reason": "No verified photographic page image"
+    }
+  ]
 }
