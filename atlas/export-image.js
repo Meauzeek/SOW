@@ -37,7 +37,7 @@ export async function exportMapImage(map,{width=3840,aspect='current',format='pn
      if(map.customDem)worker.postMessage({type:'custom',dem:map.customDem});
      if(texture)worker.postMessage({type:'night-init',...texture},[texture.buffer]);
      const t=render.transform,pt=render.proj.translate(),scale=render.dpr;
-     worker.postMessage({type:'render',id:1,width,height,projection:{kind:projection,rotation:render.kind==='national'?render.nationalRotation:render.rotation,scale:render.proj.scale()*t.k*scale,translate:[(pt[0]*t.k+t.x)*scale,(pt[1]*t.k+t.y)*scale]},transform:{x:t.x,y:t.y,k:t.k,ratio:scale},view,night:!!render.night,mode:render.mode,sea:render.sea,flood:render.layers.flood&&!render.illustratedCoast(),interval:render.interval||500});
+     worker.postMessage({type:'render',quality:'export',id:1,width,height,projection:{kind:projection,rotation:render.kind==='national'?render.nationalRotation:render.rotation,scale:render.proj.scale()*t.k*scale,translate:[(pt[0]*t.k+t.x)*scale,(pt[1]*t.k+t.y)*scale]},transform:{x:t.x,y:t.y,k:t.k,ratio:scale},view,night:!!render.night,mode:render.mode,sea:render.sea,flood:render.layers.flood&&!render.illustratedCoast(),interval:render.interval||500});
     }else if(m.type==='rendered'){
      const c=document.createElement('canvas');c.width=m.width;c.height=m.height;c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(m.buffer),m.width,m.height),0,0);render.terrain={canvas:c,transform:m.transform};clearTimeout(timer);resolve();
     }else if(m.type==='error'){clearTimeout(timer);reject(Error(m.message));}};

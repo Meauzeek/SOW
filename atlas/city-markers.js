@@ -14,14 +14,27 @@ export function populationRadius(city){
  const bins=[[0,2],[200000,2.6],[500000,3.2],[1000000,3.9],[3000000,4.5],[5000000,5.1],[10000000,5.8]];
  return Number.isFinite(city.population)?bins.findLast(([min])=>city.population>=min)?.[1]||2:2.5;
 }
-export function markerLegend(){
- return [['national','国家首都'],['regional','地区首府 / 省会'],['city','普通城市'],['town','城镇']].map(([kind,label])=>{const shape=markerShape({capital:['national','regional'].includes(kind),capitalRole:kind,settlementType:kind},3),color=kind==='national'?'#ce4448':'currentColor';return `<span><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">${shape.filled?`<circle cx="11" cy="11" r="3" fill="${color}" stroke="${kind==='city'?'#ffffffb3':'none'}" stroke-width="1.1"/>`:''}${shape.rings.map((radius,i)=>`<circle cx="11" cy="11" r="${radius}" fill="none" stroke="${color}" stroke-width="${shape.ringWidths[i]}"/>`).join('')}</svg>${label}</span>`;}).join('')+'<span>大小按人口 · 缩远简化 · 钴蓝表示海侵城市</span>';
+// Shared paint specification for canvas, SVG, legends and exports.
+export function markerPaint(city,{night=false,low=false}={}){
+ const kind=markerKind(city);return {color:low?'#2868c7':kind==='national'?(night?'#d2a3a7':'#965b63'):(night?'#d5e2ec':'#435f73'),halo:'#ffffffb3',selection:low?'#2868c7':'#498ba8'};
 }
+export function markerPrimitives(city,radius,options={}){
+ const m=markerShape(city,radius,options),p=markerPaint(city,options),rim=Math.max(1.1,Math.min(1.8,radius*.4)),parts=[];
+ if(options.selected)parts.push({r:m.outerRadius+4,fill:p.selection+'18',stroke:p.selection+'b3',width:1.6});
+ if(m.filled)parts.push({r:radius,fill:p.halo,stroke:p.halo,width:rim});
+ m.rings.forEach((r,i)=>parts.push({r,fill:'none',stroke:p.halo,width:m.ringWidths[i]+rim}));
+ if(m.filled)parts.push({r:radius,fill:p.color,stroke:'none',width:0});
+ m.rings.forEach((r,i)=>parts.push({r,fill:'none',stroke:p.color,width:m.ringWidths[i]}));
+ return parts;
+}
+export function drawCitySymbol(ctx,city,x,y,radius,options={}){
+ ctx.save();ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+ for(const part of markerPrimitives(city,radius,options)){ctx.beginPath();ctx.arc(x,y,part.r,0,Math.PI*2);if(part.fill!=='none'){ctx.fillStyle=part.fill;ctx.fill();}if(part.stroke!=='none'){ctx.strokeStyle=part.stroke;ctx.lineWidth=part.width;ctx.stroke();}}
+ ctx.restore();return markerShape(city,radius,options);
+}
+const keyCities=[[{capital:true},'国家首都'],[{capital:true,capitalRole:'regional'},'地区首府 / 省会'],[{},'普通城市'],[{settlementType:'town'},'城镇']];
+export function markerLegend(){return keyCities.map(([city,label])=>`<span><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">${markerPrimitives(city,3).map(p=>`<circle cx="12" cy="12" r="${p.r}" fill="${p.fill}" stroke="${p.stroke}" stroke-width="${p.width}"/>`).join('')}</svg>${label}</span>`).join('')+'<span>大小按人口 · 缩远简化 · 钴蓝表示海侵城市</span>';}
 export function drawCityLegend(ctx,x,y,{night=false}={}){
  ctx.save();ctx.font='600 11px "Atlas Serif","Atlas Ming",serif';ctx.textAlign='left';ctx.textBaseline='middle';
- for(const [city,label] of [[{capital:true},'国家首都'],[{capital:true,capitalRole:'regional'},'地区首府'],[{},'城市'],[{settlementType:'town'},'城镇']]){
-  const shape=markerShape(city,2.6),color=shape.kind==='national'?'#ce4448':night?'#dbe7f2':'#4f6b80';ctx.fillStyle=color;ctx.strokeStyle=color;
-  if(shape.filled){ctx.beginPath();ctx.arc(x,y,2.6,0,Math.PI*2);ctx.fill();if(shape.kind==='city'){ctx.strokeStyle='#ffffffb3';ctx.lineWidth=1;ctx.stroke();ctx.strokeStyle=color;}}
-  shape.rings.forEach((r,i)=>{ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.lineWidth=shape.ringWidths[i];ctx.stroke();});ctx.fillStyle=night?'#d4e3ed':'#40596c';ctx.fillText(label,x+12,y);x+=90;
- }ctx.restore();
+ for(const [city,label] of keyCities){drawCitySymbol(ctx,city,x,y,2.6,{night});ctx.fillStyle=night?'#d4e3ed':'#40596c';ctx.fillText(label.replace(' / 省会',''),x+12,y);x+=95;}ctx.restore();
 }
