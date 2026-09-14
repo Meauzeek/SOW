@@ -19,3 +19,5 @@
 #modal{width:min(580px,94vw)}#modal:has(.export-layout){width:min(960px,94vw)}
 
 .character-link{padding:10px 0}.character-link span,.character-link small{color:var(--muted,#6b7c90)}.character-link p{margin:5px 0}.character-link small{display:block;overflow-wrap:anywhere}
+
+.marker-key{display:flex;flex-wrap:wrap;gap:8px 14px}.marker-key>span{display:inline-flex;align-items:center;gap:5px}.marker-key svg{flex:none}

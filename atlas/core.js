@@ -47,7 +47,7 @@
   {id:'metro',label:'超大城市',range:'500—1000 万',min:5000000,radius:5.1,zoom:1},
   {id:'mega',label:'巨型城市',range:'1000 万以上',min:10000000,radius:5.8,zoom:.7}];
  function cityClass(city){const manual=CITY_CLASSES.find(c=>c.id===city.sizeClass);if(manual)return manual;if(!Number.isFinite(city.population))return {id:'unknown',label:'人口未知',range:'未填写',radius:2.5,zoom:3.1};return [...CITY_CLASSES].reverse().find(c=>city.population>=c.min)||CITY_CLASSES[0];}
- function cityDisplay(city,zoom,selected=false){const national=city.capital&&city.capitalRole!=='regional',size=cityClass(city),threshold=city.labelPriority?1.3:national?.45:city.capital?Math.min(1.25,size.zoom):size.zoom,scale=Math.max(.4,Math.min(1,zoom/3.5));return {visible:selected||zoom>=threshold,radius:selected?Math.max(6,size.radius):size.radius*scale,label:selected||zoom>=(city.labelPriority?2:Math.max(national?2:2.5,threshold+.8))};}
+ function cityDisplay(city,zoom,selected=false){const national=city.capital&&city.capitalRole!=='regional',size=cityClass(city),threshold=city.labelPriority?1.3:national?.45:city.capital?Math.min(1.25,size.zoom):size.zoom,scale=Math.max(.4,Math.min(1,zoom/3.5));return {visible:selected||zoom>=threshold,radius:size.radius*(selected?Math.max(.85,scale):scale),label:selected||zoom>=(city.labelPriority?2:Math.max(national?2:2.5,threshold+.8))};}
 
  function countsInNationalTotals(city){return city.includeInNationalTotals??city.id!=='ref-19';}
  // Aggregate recorded cities by jurisdiction, including descendant territories.
@@ -56,3 +56,4 @@
  const api={cityElevation,countsInNationalTotals,cityTotals,CITY_CLASSES,cityClass,seaLevelAt,cityDisplay,clone,rings,points,key,sharedIndex,moveShared,insertShared,removeShared,History,validateProject,validateFeature,sampleDem,connectedFlood};
  if(typeof module!=='undefined')module.exports=api;else global.AtlasCore=api;
 })(typeof window!=='undefined'?window:globalThis);
+
