@@ -8,6 +8,7 @@ export async function exportMapImage(map,{width=3840,aspect='current',format='pn
  if(map.coastMode==='illustrated'&&map.layers.flood)await map.loadCoast();
  if(view==='reference'){map.loadReference();await Promise.all(map.referenceImages.map(i=>i.decode()));}
  if(map.layers.water)await map.loadWater();
+ if(map.layers.ice||map.mode==='surface'&&['terrain','contours'].includes(view))await map.loadIce();
  await Promise.all([document.fonts.load('600 16px "Atlas Ethiopic"'),document.fonts.ready]);
  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
  const render=Object.assign(Object.create(WorldMap.prototype),map,{canvas,layers:{...map.layers,cities:labelMode==='manual'?true:map.layers.cities},exporting:true,exportLabelMode:labelMode,exportLabelIds:new Set(labelIds),exportLabelScale:labelScale,labelOverflow:0,ctx:canvas.getContext('2d'),dpr:width/map.w,view,kind:projection,preview:false,selected:null,hovered:null,tool:'select',drawPoints:[],adminSelection:null,terrain:null,cityHandles:[],vertexHandles:[],contextPaths:{...map.contextPaths}});

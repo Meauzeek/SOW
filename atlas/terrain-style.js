@@ -13,8 +13,10 @@
   const ids=[y0*d.width+x0,y0*d.width+x1,y1*d.width+x0,y1*d.width+x1],weights=[(1-fx)*(1-fy),fx*(1-fy),(1-fx)*fy,fx*fy];let sum=0,weight=0;
   for(let i=0;i<4;i++){const z=d.values[ids[i]];if(z!=null&&Number.isFinite(z)){sum+=z*weights[i];weight+=weights[i];}}return weight>0?sum/weight:null;
  }
- const sea=[[-11000,[35,95,158]],[-6000,[53,128,184]],[-3000,[89,161,203]],[-1000,[139,197,221]],[0,[199,230,237]]];
- const land=[[0,[116,183,119]],[200,[158,201,132]],[500,[205,220,147]],[1000,[238,228,163]],[2000,[229,203,148]],[3000,[211,171,124]],[4000,[187,145,112]],[5000,[183,158,142]],[6500,[225,216,203]],[8850,[248,247,240]]];
+ const sea=[[-11000,[40,66,112]],[-6000,[47,91,143]],[-3000,[65,130,178]],[-1000,[101,168,202]],[-200,[153,203,224]],[0,[206,232,241]]];
+ // Muted atlas progression, with a cartographic snow-white treatment for extreme peaks.
+ // Geographic ice cover remains an independent stippled overlay.
+ const land=[[0,[141,189,153]],[200,[170,206,154]],[500,[214,223,167]],[1000,[236,228,174]],[1500,[233,212,156]],[2000,[229,191,146]],[2500,[224,172,140]],[3000,[217,155,137]],[4000,[203,137,137]],[4800,[195,139,148]],[5000,[178,160,191]],[6000,[174,159,189]],[6500,[226,225,235]],[7000,[246,248,249]],[8850,[251,252,252]]];
  function color(z){const stops=z<0?sea:land;if(z<=stops[0][0])return stops[0][1];for(let i=1;i<stops.length;i++)if(z<=stops[i][0]){const [a,ca]=stops[i-1],[b,cb]=stops[i],t=(z-a)/(b-a);return ca.map((v,j)=>Math.round(v+(cb[j]-v)*t));}return stops.at(-1)[1];}
  const api={sampleSmooth,color,sea,land};if(typeof module!=='undefined'&&module.exports)module.exports=api;root.AtlasTerrainStyle=api;
 })(typeof self!=='undefined'?self:globalThis);

@@ -1,3 +1,5 @@
+import {drawIceCover} from './ice-style.js';
+import {drawTerrainLegend} from './terrain-legend.js';
 import {drawCityLegend} from './city-markers.js';
 import {strokeAtlasLine} from './atlas-lines.js';
 const polygons=f=>f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.type==='MultiPolygon'?f.geometry.coordinates:[];
@@ -47,6 +49,7 @@ export function drawNational(map){
  if(map.layers.water){ctx.fillStyle=map.night?'#193d52':'#c2e1ef';ctx.strokeStyle='#619ab6';ctx.lineWidth=.65/t.k;for(const lake of map.waterPaths||[]){ctx.fill(lake.path);ctx.stroke(lake.path);}if(map.contextPaths.river){ctx.strokeStyle='#74a9bf';ctx.stroke(map.contextPaths.river);}}
  if(map.view==='standard'&&map.contextPaths.road){ctx.strokeStyle=map.night?'#7f795e':'#dbc69b';ctx.lineWidth=1/t.k;ctx.stroke(map.contextPaths.road);}
  if(map.layers.admin){for(const item of map.adminPaths)strokeAtlasLine(ctx,item.path,'regional',{night:map.night,zoom:t.k,detailed:true});}
+ if(map.showIce())drawIceCover(map);
  ctx.restore();
  const geo=window.d3.geoPath(map.proj);
  strokeAtlasLine(ctx,new Path2D(geo(s.coast)||''),'coast',{night:map.night,zoom:t.k,detailed:true});
@@ -55,5 +58,5 @@ export function drawNational(map){
  // The legend is part of exported national maps as well as the on-screen view.
  ctx.font='600 12px "Atlas Serif","Atlas Ming",serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle=map.night?'#d4e3ed':'#40596c';
  let legendX=28;for(const [kind,label] of [['coast','海岸线'],['national','陆地国界'],...(s.sea.length?[['maritime','海洋疆域']]:[])]){const sample=new Path2D();sample.moveTo(legendX,map.h-25);sample.lineTo(legendX+35,map.h-25);strokeAtlasLine(ctx,sample,kind,{night:map.night,detailed:true});ctx.fillText(label,legendX+42,map.h-25);legendX+=110;}
- if(map.exporting){if(map.layers.cities)drawCityLegend(ctx,32,map.h-48,{night:map.night});ctx.font='600 27px "Atlas Serif","Atlas Ming",serif';ctx.fillText(s.root.properties.name+'地图',28,35);ctx.font='600 12px "Atlas Serif","Atlas Ming",serif';ctx.fillText(`海平面 +${map.sea} m`,28,60);}
+ if(map.exporting){if(map.view==='terrain')drawTerrainLegend(ctx,32,map.h-150,Math.min(380,map.w-64),{night:map.night});if(map.layers.cities)drawCityLegend(ctx,32,map.h-48,{night:map.night});ctx.font='600 27px "Atlas Serif","Atlas Ming",serif';ctx.fillText(s.root.properties.name+'地图',28,35);ctx.font='600 12px "Atlas Serif","Atlas Ming",serif';ctx.fillText(`海平面 +${map.sea} m`,28,60);}
 }
