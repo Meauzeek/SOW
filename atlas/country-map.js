@@ -1,3 +1,5 @@
+import {drawCityLegend} from './city-markers.js';
+import {strokeAtlasLine} from './atlas-lines.js';
 const polygons=f=>f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.type==='MultiPolygon'?f.geometry.coordinates:[];
 const segments=f=>polygons(f).flatMap(p=>p.flatMap(r=>r.slice(1).map((b,i)=>[r[i],b]))).filter(([a,b])=>Math.abs(a[0]-b[0])<180&&!(Math.abs(a[0])>179.999&&Math.abs(b[0])>179.999)&&!(Math.abs(a[1])>89.999&&Math.abs(b[1])>89.999));
 const marine=f=>f.properties.territoryType==='maritime';
@@ -38,20 +40,20 @@ export function drawNational(map){
  ctx.save();ctx.translate(t.x,t.y);ctx.scale(t.k,t.k);
  if(map.countryNeighbors)for(const {f,path} of map.paths){if(s.ids.has(f.properties.id)||f.properties.parentId)continue;ctx.fillStyle=map.night?'#263642':'#e8edf0';ctx.fill(path);}
  const mask=new Path2D();for(const f of s.land){const path=map.pathFor(f);mask.addPath(path);ctx.fillStyle=map.fillColor(f);ctx.fill(path);}
- for(const f of s.sea){const path=map.pathFor(f);ctx.fillStyle=map.night?'#328ab833':'#55a3c033';ctx.fill(path);ctx.strokeStyle='#549ec2';ctx.lineWidth=1.3/t.k;ctx.setLineDash([7/t.k,4/t.k]);ctx.stroke(map.borderFor(f,path));ctx.setLineDash([]);}
+ for(const f of s.sea){const path=map.pathFor(f);ctx.fillStyle=map.night?'#328ab833':'#55a3c033';ctx.fill(path);strokeAtlasLine(ctx,map.borderFor(f,path),'maritime',{night:map.night,zoom:t.k,detailed:true});}
  ctx.save();ctx.clip(mask);
- if(map.terrain){const old=map.terrain.transform,ratio=old.ratio,rel=t.k/old.k;ctx.save();ctx.setTransform(map.dpr,0,0,map.dpr,0,0);ctx.translate(t.x-old.x*rel,t.y-old.y*rel);ctx.scale(rel,rel);ctx.drawImage(map.terrain.canvas,0,0,map.terrain.canvas.width/ratio,map.terrain.canvas.height/ratio);ctx.restore();}
- if(map.coastPaths&&map.layers.flood&&map.illustratedCoast()){ctx.fillStyle=map.night?'#132a39':'#dcebf2';ctx.fill(map.coastPaths[1]);ctx.strokeStyle='#6097b2';ctx.lineWidth=1.2/t.k;ctx.stroke(map.coastOutline||map.coastPaths[0]);}
+ if(map.terrain){const old=map.terrain.transform,ratio=old.ratio,rel=t.k/old.k;ctx.save();ctx.setTransform(map.dpr,0,0,map.dpr,0,0);ctx.translate(t.x-old.x*rel,t.y-old.y*rel);ctx.scale(rel,rel);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(map.terrain.canvas,0,0,map.terrain.canvas.width/ratio,map.terrain.canvas.height/ratio);ctx.restore();}
+ if(map.coastPaths&&map.layers.flood&&map.illustratedCoast()){ctx.fillStyle=map.night?'#132a39':'#dcebf2';ctx.fill(map.coastPaths[1]);strokeAtlasLine(ctx,map.coastOutline||map.coastPaths[0],'coast',{night:map.night,zoom:t.k});}
  if(map.layers.water){ctx.fillStyle=map.night?'#193d52':'#c2e1ef';ctx.strokeStyle='#619ab6';ctx.lineWidth=.65/t.k;for(const lake of map.waterPaths||[]){ctx.fill(lake.path);ctx.stroke(lake.path);}if(map.contextPaths.river){ctx.strokeStyle='#74a9bf';ctx.stroke(map.contextPaths.river);}}
  if(map.view==='standard'&&map.contextPaths.road){ctx.strokeStyle=map.night?'#7f795e':'#dbc69b';ctx.lineWidth=1/t.k;ctx.stroke(map.contextPaths.road);}
- if(map.layers.admin){ctx.strokeStyle=map.night?'#adbac477':'#667f8d66';ctx.lineWidth=.65/t.k;for(const item of map.adminPaths)ctx.stroke(item.path);}
+ if(map.layers.admin){for(const item of map.adminPaths)strokeAtlasLine(ctx,item.path,'regional',{night:map.night,zoom:t.k,detailed:true});}
  ctx.restore();
  const geo=window.d3.geoPath(map.proj);
- ctx.strokeStyle=map.night?'#96c5df':'#4d8eaf';ctx.lineWidth=1.4/t.k;ctx.stroke(new Path2D(geo(s.coast)||''));
- ctx.strokeStyle=map.night?'#e4d3b1':'#48515b';ctx.lineWidth=1.8/t.k;ctx.setLineDash([6/t.k,3/t.k]);ctx.stroke(new Path2D(geo(s.border)||''));ctx.setLineDash([]);
+ strokeAtlasLine(ctx,new Path2D(geo(s.coast)||''),'coast',{night:map.night,zoom:t.k,detailed:true});
+ strokeAtlasLine(ctx,new Path2D(geo(s.border)||''),'national',{night:map.night,zoom:t.k,detailed:true});
  ctx.restore();map.labelBoxes=[];if(map.layers.cities)map.drawCities();map.drawEditing();
  // The legend is part of exported national maps as well as the on-screen view.
  ctx.font='600 12px "Atlas Serif","Atlas Ming",serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle=map.night?'#d4e3ed':'#40596c';
- ctx.fillText('━ 海岸线    ┄ 陆地国界'+(s.sea.length?'    ┄ 海洋疆域':''),28,map.h-25);
- if(map.exporting){ctx.font='600 27px "Atlas Serif","Atlas Ming",serif';ctx.fillText(s.root.properties.name+'地图',28,35);ctx.font='600 12px "Atlas Serif","Atlas Ming",serif';ctx.fillText(`海平面 +${map.sea} m`,28,60);}
+ let legendX=28;for(const [kind,label] of [['coast','海岸线'],['national','陆地国界'],...(s.sea.length?[['maritime','海洋疆域']]:[])]){const sample=new Path2D();sample.moveTo(legendX,map.h-25);sample.lineTo(legendX+35,map.h-25);strokeAtlasLine(ctx,sample,kind,{night:map.night,detailed:true});ctx.fillText(label,legendX+42,map.h-25);legendX+=110;}
+ if(map.exporting){if(map.layers.cities)drawCityLegend(ctx,32,map.h-48,{night:map.night});ctx.font='600 27px "Atlas Serif","Atlas Ming",serif';ctx.fillText(s.root.properties.name+'地图',28,35);ctx.font='600 12px "Atlas Serif","Atlas Ming",serif';ctx.fillText(`海平面 +${map.sea} m`,28,60);}
 }

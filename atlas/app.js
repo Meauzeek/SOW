@@ -1,3 +1,4 @@
+import {lineLegendSvg} from './atlas-lines.js';
 import {markerLegend} from './city-markers.js';
 import {installRankings} from './rankings.js';
 import {formatCharacterLinks,parseCharacterLinks} from './character-links.js';
@@ -112,7 +113,7 @@ function setView(view){$('.palette-control').hidden=view!=='political';const nam
  else if(view==='nightlights')$('#legend').innerHTML='NASA Black Marble · 2016 现实灯光参考';
  else if(view==='standard')$('#legend').innerHTML='浅蓝水域 · 米白陆地 · 主要道路 / 河流（概览）';
  else if(view==='political')$('#legend').innerHTML='<span class="legend-line"></span>架空国界 <span style="background:#2868c7;width:6px;height:6px;border-radius:50%;margin-left:10px"></span>低于海平面 <span style="background:#309eac;width:8px;height:8px;margin-left:8px"></span>新增淹没';
- else $('#legend').innerHTML='<span style="display:inline-block;width:110px;height:6px;background:linear-gradient(90deg,#82aab0,#b6cba5,#ded0a6,#ae9d93,#e8e4db)"></span> −6,000 → 6,000 m';}
+ else $('#legend').innerHTML='<span style="display:inline-block;width:110px;height:6px;background:linear-gradient(90deg,#3580b8,#c7e6ed,#74b777,#cddc93,#eee4a3,#d3ab7c,#bb9170,#f8f7f0)"></span> 海深 ← 0 · 200 · 500 · 1000 · 3000 · 6000 m';}
 $$('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
 const layerIds={layerTerritories:'territories',layerAdmin:'admin',layerCities:'cities',layerIce:'ice',layerFlood:'flood'};Object.entries(layerIds).forEach(([id,key])=>$('#'+id).onchange=async e=>{map.layers[key]=e.target.checked;if(key==='admin')await ensureAdmin();if(key==='ice'&&!map.ice){map.setIce((await (await fetch('data/ice.geojson')).json()).features);}map.draw();if(key==='flood')map.requestTerrain();});
 $$('[data-sea]').forEach(b=>b.onclick=()=>changeSea(b.dataset.year==='2039'?Number(C.seaLevelAt(2039).toFixed(2)):Number(b.dataset.sea),b.dataset.year?Number(b.dataset.year):null));$('#seaNumber').onchange=e=>changeSea(Number(e.target.value));$('#seaSlider').oninput=e=>{$('#seaNumber').value=e.target.value;};$('#seaSlider').onchange=e=>changeSea(Number(e.target.value));$('#coastMode').onchange=e=>{transaction('切换海岸线显示',()=>state.coastMode=e.target.value);map.terrain=null;map.draw();map.requestTerrain();};$('#surfaceMode').onchange=e=>{transaction('切换高程表面',()=>state.mode=e.target.value);map.requestTerrain();};
@@ -159,7 +160,7 @@ function bindRomanizer(nameInput){const update=()=>{try{$('#romanResult').value=
 function attachRomanizer(box,c){const section=document.createElement('details');section.className='romanizer-panel';section.innerHTML='<summary>由中文生成威妥玛拼音</summary>'+romanizerMarkup(false)+'<button type="button" id="applyRoman">应用到英文名称</button>';box.after(section);bindRomanizer($('#modalForm [name=name]'));$('#applyRoman').onclick=()=>{const result=$('#romanResult').value;if(!result)return;$('#modalForm [name=englishName]').value=result;toast('已填入英文名称，保存档案后生效');};}
 $('#romanizeTool').onclick=()=>{openModal('威妥玛拼音工具',romanizerMarkup(),null,false);bindRomanizer($('#romanZh'));};
 $('#showFeatured').onchange=e=>transaction('切换明星标记显示',()=>state.showFeatured=e.target.checked);
-$('.marker-key').innerHTML=markerLegend();
+$('.marker-key').innerHTML=markerLegend()+lineLegendSvg();
 $('#populationLegend').innerHTML='<span>城市人口规模</span>'+C.CITY_CLASSES.map(c=>`<span><i style="width:${c.radius*2}px;height:${c.radius*2}px"></i>${c.range}</span>`).join('');
 $('#layerWater').onchange=e=>transaction('切换重要水系',()=>{state.showWater=e.target.checked;});
 $('#showCountryNames').onchange=e=>transaction('切换国名总开关',()=>{state.showCountryNames=e.target.checked;});
