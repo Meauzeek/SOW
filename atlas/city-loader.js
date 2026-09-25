@@ -1,6 +1,7 @@
+import {readArchiveJSON} from './project-startup.js?v=r30';
 // Local drafts may be a single array; published archives are split by city.
 export async function loadCityArchive(url,fetcher=fetch){
- const read=async path=>{const response=await fetcher(path);if(!response.ok)throw Error('城市档案暂未就绪，请刷新');return response.json();};
+ const read=path=>readArchiveJSON(path,fetcher);
  const index=await read(url);
  if(Array.isArray(index))return index;
  if(index.format!=='atlas-city-chunks-v1'||!Array.isArray(index.parts)||index.parts.length>100)throw Error('城市档案索引无效');
